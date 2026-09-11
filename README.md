@@ -67,12 +67,25 @@ Pages serves a project site from — asset URLs break without it.
 ## Architecture
 
 ### Screens (`app/`, expo-router)
-- `index.tsx` — describe the injury (text/voice/photo) + location
+- `index.tsx` — describe the injury (text/voice/photo); location is picked up
+  in the background
 - `processing.tsx` — runs the assessment; handles the clarify-and-retry loop
   when the model says it needs more detail, without restarting the flow
 - `result.tsx` — severity, recommended action, red flags, nearby facilities
 - `history.tsx` — past assessments, stored in this browser
 - `settings.tsx` — per-function provider choice + BYOK key entry
+
+### Location
+
+There is no location field. The app asks for GPS once when it opens and keeps
+the result in the background, so the common case needs no input at all.
+
+To override it, just say where you are in the description — "twisted my ankle
+near MG Road". The model returns that as `locationMentioned` and the result
+screen prefers it over GPS: if someone says where they are, believe them over
+the phone's idea of where they are. A manual field only appears on the result
+screen when neither is available (GPS denied and no place named), since the
+facility search can't run without a location at all.
 
 ### History
 

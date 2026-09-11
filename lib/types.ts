@@ -10,6 +10,12 @@ export interface SeverityResult {
   summary: string;
   recommendedAction: string;
   redFlags: string[];
+  /**
+   * A place the user named in their own words ("at Indiranagar", "near MG
+   * Road"), if any. Takes precedence over GPS — if someone says where they
+   * are, believe them.
+   */
+  locationMentioned?: string;
   needsMoreInfo: boolean;
   clarifyingQuestion?: string; // present only if needsMoreInfo is true
 }

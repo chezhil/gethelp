@@ -21,6 +21,9 @@ Return ONLY a single JSON object, no prose, no markdown fences, matching exactly
                                  // than likelyNature, still never a diagnosis
   "recommendedAction": string,  // one short sentence, routing language only
   "redFlags": string[],         // notable signs found in the description, [] if none
+  "locationMentioned": string,  // a place the user named ("at Indiranagar",
+                                 // "near MG Road"), or "" if they named none.
+                                 // Do NOT invent one.
   "needsMoreInfo": boolean,
   "clarifyingQuestion": string  // ONLY include this key if needsMoreInfo is true
 }
@@ -90,6 +93,10 @@ function normalize(raw: unknown, forceAnswer: boolean): SeverityResult {
     recommendedAction:
       typeof r.recommendedAction === "string" ? r.recommendedAction : "Seeking in-person care is recommended",
     redFlags: Array.isArray(r.redFlags) ? r.redFlags.filter((x): x is string => typeof x === "string") : [],
+    locationMentioned:
+      typeof r.locationMentioned === "string" && r.locationMentioned.trim()
+        ? r.locationMentioned.trim()
+        : undefined,
     needsMoreInfo: false,
   };
 }

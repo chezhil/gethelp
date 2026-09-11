@@ -112,7 +112,7 @@ export default function ResultScreen() {
         </View>
       )}
 
-      <FacilitiesSection tier={result.severityTier} />
+      <FacilitiesSection tier={result.severityTier} mentioned={result.locationMentioned} />
 
       <PrimaryButton label="Start over" variant="outline" onPress={startOver} style={styles.startOver} />
       <Disclaimer />
@@ -120,14 +120,14 @@ export default function ResultScreen() {
   );
 }
 
-function FacilitiesSection({ tier }: { tier: string }) {
+function FacilitiesSection({ tier, mentioned }: { tier: string; mentioned?: string }) {
   const { settings } = useProviderSettings();
   const triage = useTriage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Pre-fill with whatever the user already typed on the input screen —
   // don't make them retype a location they already gave us.
-  const [manualLocation, setManualLocation] = useState(triage.locationText);
+  const [manualLocation, setManualLocation] = useState(mentioned ?? triage.locationText);
   const [gpsBusy, setGpsBusy] = useState(false);
   const started = useRef(false);
 
@@ -189,16 +189,18 @@ function FacilitiesSection({ tier }: { tier: string }) {
 
   useEffect(() => {
     if (started.current) return;
-    if (triage.coords) {
+    // A place named in the description wins: if someone says where they are,
+    // believe them over the phone's idea of where they are. GPS, picked up in
+    // the background on the input screen, is the fallback.
+    const named = (mentioned ?? triage.locationText).trim();
+    if (named) {
+      started.current = true;
+      resolveAndSearch(named);
+    } else if (triage.coords) {
       started.current = true;
       runSearch(triage.coords);
-    } else if (triage.locationText.trim()) {
-      // The user already typed a location on the input screen — resolve it
-      // automatically instead of asking them to type it again here.
-      started.current = true;
-      resolveAndSearch(triage.locationText.trim());
     }
-  }, [triage.coords, triage.locationText, runSearch, resolveAndSearch]);
+  }, [mentioned, triage.coords, triage.locationText, runSearch, resolveAndSearch]);
 
   async function useGps() {
     setError(null);

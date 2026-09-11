@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
@@ -23,10 +23,41 @@ export default function InputScreen() {
   const router = useRouter();
   const { settings } = useProviderSettings();
   const triage = useTriage();
-  const [usingGps, setUsingGps] = useState(false);
-  const [locationBusy, setLocationBusy] = useState(false);
-  const [locationNote, setLocationNote] = useState<string | null>(null);
   const [needsKey, setNeedsKey] = useState(false);
+  const [locationStatus, setLocationStatus] = useState<"pending" | "ready" | "unavailable">(
+    "pending"
+  );
+
+  // Location is handled for you: we ask for it once on open and keep it in
+  // the background. There's no location field — if you'd rather say where you
+  // are, just write it into the description and that takes precedence (the
+  // model returns it as locationMentioned, and the result screen prefers it).
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const perm = await Location.requestForegroundPermissionsAsync();
+        if (!perm.granted) {
+          if (active) setLocationStatus("unavailable");
+          return;
+        }
+        const pos = await Location.getCurrentPositionAsync({});
+        if (!active) return;
+        triage.setCoords(
+          { lat: pos.coords.latitude, lng: pos.coords.longitude },
+          "Current location"
+        );
+        setLocationStatus("ready");
+      } catch {
+        if (active) setLocationStatus("unavailable");
+      }
+    })();
+    return () => {
+      active = false;
+    };
+    // Runs once on open; triage.setCoords is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Nothing works without a reasoning key, and this app ships with none by
   // design — so say so up front rather than letting the first attempt fail.
@@ -66,31 +97,6 @@ export default function InputScreen() {
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
       triage.setPhoto(asset.uri, asset.base64 ?? undefined, asset.mimeType ?? undefined);
-    }
-  }
-
-  async function useCurrentLocation() {
-    setLocationBusy(true);
-    setLocationNote(null);
-    try {
-      const perm = await Location.requestForegroundPermissionsAsync();
-      if (!perm.granted) {
-        setLocationNote("Location permission was not granted.");
-        setUsingGps(false);
-        return;
-      }
-      const pos = await Location.getCurrentPositionAsync({});
-      triage.setCoords(
-        { lat: pos.coords.latitude, lng: pos.coords.longitude },
-        "Current location"
-      );
-      triage.setLocationText("");
-      setUsingGps(true);
-    } catch {
-      setLocationNote("Could not get your location. You can type it instead.");
-      setUsingGps(false);
-    } finally {
-      setLocationBusy(false);
     }
   }
 
@@ -191,29 +197,13 @@ export default function InputScreen() {
           </Text>
         )}
 
-        <Text style={styles.label}>Where are you?</Text>
-        <TextInput
-          value={triage.locationText}
-          onChangeText={(t) => {
-            triage.setLocationText(t);
-            setUsingGps(false);
-            triage.setCoords(undefined);
-          }}
-          placeholder="Type an address or area"
-          placeholderTextColor={colors.textMuted}
-          style={styles.input}
-          editable={!usingGps}
-        />
-        <Pressable
-          onPress={useCurrentLocation}
-          hitSlop={8}
-          style={[styles.iconButton, usingGps && styles.iconButtonActive, styles.locationButton]}
-        >
-          <Text style={styles.iconButtonText}>
-            {locationBusy ? "Locating…" : usingGps ? "✓ Using current location" : "📍 Use current location"}
-          </Text>
-        </Pressable>
-        {locationNote && <Text style={styles.errorText}>{locationNote}</Text>}
+        <Text style={styles.locationStatus}>
+          {locationStatus === "ready"
+            ? "📍 Using your current location. Mention a place in the description to use that instead."
+            : locationStatus === "pending"
+              ? "📍 Getting your location…"
+              : "📍 Location unavailable — mention where you are in the description."}
+        </Text>
 
         <PrimaryButton
           label="Continue"
@@ -338,6 +328,7 @@ const styles = StyleSheet.create({
   },
   removePhotoButton: { alignSelf: "flex-start", paddingVertical: spacing.sm, minHeight: 44, justifyContent: "center" },
   removePhoto: { ...type.small, color: colors.danger },
+  locationStatus: { ...type.small, color: colors.textMuted, marginTop: spacing.md },
   label: { ...type.label, color: colors.textMuted, marginTop: spacing.lg, marginBottom: spacing.xs },
   input: {
     ...type.body,
