@@ -4,14 +4,20 @@
 //
 // expo-speech-recognition wraps a real native module that only exists in a
 // custom dev build or a production build — Expo Go does not ship it. The
-// package resolves that module with requireNativeModule(), which throws
-// synchronously the moment the package is evaluated if the module isn't
-// linked. A plain `import` at the top of this file would therefore crash
-// every screen that (transitively) imports this one the instant the app
-// starts in Expo Go. So the package is loaded lazily behind a try/catch
-// instead, and voice input degrades to "unavailable" rather than taking the
-// app down with it.
+// package resolves that module by calling Expo's requireNativeModule(),
+// which throws unconditionally (and, in dev, logs before throwing) the
+// moment the package is evaluated if the module isn't linked — wrapping the
+// `require("expo-speech-recognition")` call itself in try/catch still stops
+// it from crashing the app, but doesn't stop the dev error overlay from
+// flashing up, which is a bad look for a demo.
+//
+// So instead we check for the native module first using Expo's own
+// requireOptionalNativeModule(), which returns null instead of throwing.
+// Only when that confirms the module is actually linked do we pull in the
+// full expo-speech-recognition package — meaning the throwing code path
+// inside it never runs at all when the module is missing.
 
+import { requireOptionalNativeModule } from "expo-modules-core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { VoiceProvider } from "../store/settings";
 
@@ -21,8 +27,11 @@ let cachedModule: SpeechModule | null | undefined;
 
 function loadSpeechModule(): SpeechModule | null {
   if (cachedModule !== undefined) return cachedModule;
+  if (!requireOptionalNativeModule("ExpoSpeechRecognition")) {
+    cachedModule = null;
+    return null;
+  }
   try {
-    // Deliberately a runtime require, not a static import — see file header.
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     cachedModule = require("expo-speech-recognition") as SpeechModule;
   } catch {
