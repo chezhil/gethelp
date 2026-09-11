@@ -15,6 +15,9 @@ Return ONLY a single JSON object, no prose, no markdown fences, matching exactly
 {
   "severityTier": "minor" | "moderate" | "severe" | "critical",
   "likelyNature": string,       // brief, plain-language, e.g. "possible ankle sprain"
+  "summary": string,            // 2-3 plain-language sentences: what might be going on
+                                 // and why that maps to this urgency tier — more detail
+                                 // than likelyNature, still never a diagnosis
   "recommendedAction": string,  // one short sentence, routing language only
   "redFlags": string[],         // notable signs found in the description, [] if none
   "needsMoreInfo": boolean,
@@ -30,8 +33,10 @@ Rules:
   clarifyingQuestion when needsMoreInfo is true.
 - When genuinely ambiguous between two severity levels, choose the HIGHER (more
   urgent) tier. This is a safer failure mode than under-estimating.
-- Never provide a medical diagnosis. Speak only in urgency/routing language:
-  "this suggests seeking care at an urgent care clinic", not "you have a fracture".
+- Never provide a medical diagnosis, in either recommendedAction or summary. Speak
+  only in urgency/routing language: "this suggests seeking care at an urgent care
+  clinic" / "swelling and reduced movement like this often point to a soft-tissue
+  or bone injury that's worth an in-person look" — never "you have a fracture".
 - Output strictly valid JSON. No text before or after it.`;
 
 function normalize(raw: unknown, forceAnswer: boolean): SeverityResult {
@@ -50,6 +55,8 @@ function normalize(raw: unknown, forceAnswer: boolean): SeverityResult {
     return {
       severityTier: "moderate",
       likelyNature: "Not enough detail to characterize precisely",
+      summary:
+        "There wasn't quite enough detail to narrow this down further, and you've chosen not to answer another question. Given that uncertainty, it's safer to treat this as worth an in-person look rather than assume it's minor.",
       recommendedAction:
         "Limited information was provided — seeking in-person urgent care is recommended for a proper evaluation.",
       redFlags: [],
@@ -63,6 +70,7 @@ function normalize(raw: unknown, forceAnswer: boolean): SeverityResult {
     return {
       severityTier: "minor",
       likelyNature: "",
+      summary: "",
       recommendedAction: "",
       redFlags: [],
       needsMoreInfo: true,
@@ -77,6 +85,7 @@ function normalize(raw: unknown, forceAnswer: boolean): SeverityResult {
   return {
     severityTier: tier,
     likelyNature: typeof r.likelyNature === "string" ? r.likelyNature : "Unable to characterize",
+    summary: typeof r.summary === "string" ? r.summary : "",
     recommendedAction:
       typeof r.recommendedAction === "string" ? r.recommendedAction : "Seeking in-person care is recommended",
     redFlags: Array.isArray(r.redFlags) ? r.redFlags.filter((x): x is string => typeof x === "string") : [],
@@ -130,7 +139,7 @@ export async function assessWithGroq(input: AssessInput): Promise<SeverityResult
     body: JSON.stringify({
       model: "openai/gpt-oss-120b",
       temperature: 0.3,
-      max_tokens: 700,
+      max_tokens: 900,
       // gpt-oss is a reasoning model: it spends completion tokens on an
       // internal "reasoning" pass before writing the final `content`. Low
       // effort keeps that pass short — high effort has burned the whole
@@ -177,7 +186,7 @@ export async function assessWithGemini(input: AssessInput): Promise<SeverityResu
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemPromptFor(input) }] },
         contents: [{ role: "user", parts }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 500 },
+        generationConfig: { temperature: 0.3, maxOutputTokens: 700 },
       }),
     }
   );

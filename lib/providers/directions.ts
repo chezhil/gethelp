@@ -13,7 +13,7 @@ export class DirectionsError extends Error {}
 export async function routeWithOSRM(origin: Coords, dest: Coords): Promise<RouteResult> {
   const coords = `${origin.lng},${origin.lat};${dest.lng},${dest.lat}`;
   const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`;
-  const resp = await fetch(url);
+  const resp = await fetch(url, { headers: { "User-Agent": "gethelp-app/1.0" } });
   if (!resp.ok) throw new DirectionsError(`OSRM request failed (${resp.status}).`);
   const data = await resp.json();
   const route = data?.routes?.[0];

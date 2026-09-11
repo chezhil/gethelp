@@ -45,7 +45,11 @@ export async function nearbyWithOverpass(
 
   const resp = await fetch("https://overpass-api.de/api/interpreter", {
     method: "POST",
-    headers: { "Content-Type": "text/plain" },
+    // Overpass's edge rejects requests with React Native's default OkHttp
+    // User-Agent (406 Not Acceptable) — confirmed live: identical request,
+    // only the UA differs, 406 vs 200. An identifying UA fixes it, same as
+    // geocoding.ts already does for Nominatim.
+    headers: { "Content-Type": "text/plain", "User-Agent": "gethelp-app/1.0" },
     body: query,
   });
   if (!resp.ok) throw new NearbyError(`Overpass request failed (${resp.status}).`);

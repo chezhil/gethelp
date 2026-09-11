@@ -54,6 +54,13 @@ export default function ResultScreen() {
       <Text style={styles.sectionLabel}>Recommended</Text>
       <Text style={styles.action}>{result.recommendedAction || severityAction[result.severityTier]}</Text>
 
+      {!!result.summary && (
+        <View style={styles.summaryBox}>
+          <Text style={styles.sectionLabel}>What this might mean</Text>
+          <Text style={styles.summaryText}>{result.summary}</Text>
+        </View>
+      )}
+
       {result.redFlags.length > 0 && (
         <View style={styles.flagsBox}>
           <Text style={styles.sectionLabel}>Noted in your description</Text>
@@ -238,6 +245,8 @@ const styles = StyleSheet.create({
   nature: { ...type.title, color: colors.text, marginTop: spacing.md },
   sectionLabel: { ...type.label, color: colors.textMuted, marginTop: spacing.lg, marginBottom: spacing.xs },
   action: { ...type.bodyStrong, color: colors.text },
+  summaryBox: { marginTop: spacing.md },
+  summaryText: { ...type.body, color: colors.text },
   flagsBox: { marginTop: spacing.xs },
   flag: { ...type.body, color: colors.text },
   facilitiesWrap: { marginTop: spacing.sm },

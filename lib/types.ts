@@ -6,6 +6,8 @@ export type SeverityTier = "minor" | "moderate" | "severe" | "critical";
 export interface SeverityResult {
   severityTier: SeverityTier;
   likelyNature: string;
+  /** 2-3 plain-language sentences on what might be going on and why — urgency/routing framing, never a diagnosis. */
+  summary: string;
   recommendedAction: string;
   redFlags: string[];
   needsMoreInfo: boolean;
