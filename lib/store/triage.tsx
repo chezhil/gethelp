@@ -19,7 +19,8 @@ interface TriageState {
   facilities?: NearbyFacility[];
   facilitiesError?: string;
 
-  setDescription: (v: string) => void;
+  /** Accepts the functional form too — voice input needs it to append without racing itself. */
+  setDescription: React.Dispatch<React.SetStateAction<string>>;
   appendClarification: (answer: string) => void;
   setPhoto: (uri?: string, base64?: string, mimeType?: string) => void;
   setLocationText: (v: string) => void;

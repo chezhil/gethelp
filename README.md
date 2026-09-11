@@ -117,6 +117,20 @@ Dropped files are checked for type and size (images only, 10MB) and read as a
 data URL, from which the raw base64 and the file's real mime type are sent to
 the vision model.
 
+### Voice input
+
+The recognizer streams interim results — each one a longer version of the same
+utterance ("my", "my arm", "my arm is") — and only the result flagged
+`isFinal` is written into the description. Interim text is shown live in its
+own box under the button instead, so a pause looks like listening rather than
+a hang.
+
+Recognition is continuous: someone describing an injury stops to think, and a
+non-continuous recognizer treats the first pause as the end of the sentence.
+It listens until you press Stop, and each completed sentence appends. If the
+recognizer ends or errors without a final result, whatever it had already
+heard is flushed rather than dropped.
+
 ### Location
 
 There is no location field. The app asks for GPS once when it opens and keeps

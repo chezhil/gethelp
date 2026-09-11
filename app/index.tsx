@@ -90,8 +90,10 @@ export default function InputScreen() {
   // than accept a photo that silently gets dropped.
   const photoSupported = settings.reasoning === "gemini";
 
+  // Functional update: two sentences can finalize in the same tick, and
+  // reading triage.description from the closure would lose the first one.
   const voice = useVoiceInput(settings.voice, (text) => {
-    triage.setDescription(triage.description ? `${triage.description} ${text}` : text);
+    triage.setDescription((prev) => (prev ? `${prev} ${text}` : text));
   });
 
   const canSubmit = triage.description.trim().length > 0;
@@ -172,7 +174,11 @@ export default function InputScreen() {
             ]}
           >
             <Text style={styles.iconButtonText}>
-              {voice.isListening ? "◼ Stop" : voice.isAvailable ? "🎤 Voice" : "🎤 Voice (unavailable)"}
+              {voice.isListening
+                ? "◼ Stop listening"
+                : voice.isAvailable
+                  ? "🎤 Voice"
+                  : "🎤 Voice (unavailable)"}
             </Text>
           </Pressable>
 
@@ -187,6 +193,14 @@ export default function InputScreen() {
             </>
           )}
         </View>
+        {voice.isListening && (
+          <View style={styles.listeningBox}>
+            <Text style={styles.listeningLabel}>Listening — press Stop when you're done</Text>
+            {!!voice.partialTranscript && (
+              <Text style={styles.listeningText}>{voice.partialTranscript}</Text>
+            )}
+          </View>
+        )}
         {voice.error && <Text style={styles.errorText}>{voice.error}</Text>}
         {!voice.isAvailable && !voice.error && (
           <Text style={styles.helperText}>{VOICE_UNAVAILABLE_REASON}</Text>
@@ -336,6 +350,18 @@ const styles = StyleSheet.create({
   iconButtonDisabled: { opacity: 0.5 },
   iconButtonText: { ...type.small, color: colors.text, fontWeight: "600" },
   errorText: { ...type.small, color: colors.danger, marginTop: spacing.xs },
+  // Live view of what the recognizer is hearing, so a long pause doesn't look
+  // like a hang. Tinted rather than bordered — it comes and goes, and a box
+  // that appears mid-form shouldn't shove the layout around.
+  listeningBox: {
+    marginTop: spacing.sm,
+    backgroundColor: colors.cyan,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  listeningLabel: { ...type.label, color: colors.textMuted },
+  listeningText: { ...type.body, color: colors.text, marginTop: spacing.xs },
   helperText: { ...type.small, color: colors.textMuted, marginTop: spacing.sm },
   photoPreviewWrap: { marginTop: spacing.sm },
   photoPreview: {
