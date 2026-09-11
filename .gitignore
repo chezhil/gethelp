@@ -1,0 +1,15 @@
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+.DS_Store
+
+# native build output if ejected
+ios/build/
+android/build/
+android/app/build/
+
+# never commit local API keys
+.env
+.env.local
