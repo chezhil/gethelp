@@ -10,6 +10,8 @@ import { border, CONTENT_MAX_WIDTH, colors, radius, severityAction, shadow, spac
 import { geocode } from "../lib/providers/geocoding";
 import { nearbyFacilities } from "../lib/providers/nearby";
 import { route as fetchRoute } from "../lib/providers/directions";
+import { useAuth } from "../lib/store/auth";
+import { addHistoryEntry } from "../lib/store/history";
 import { useProviderSettings } from "../lib/store/settings";
 import { useTriage } from "../lib/store/triage";
 import type { Coords, NearbyFacility } from "../lib/types";
@@ -17,8 +19,49 @@ import type { Coords, NearbyFacility } from "../lib/types";
 export default function ResultScreen() {
   const router = useRouter();
   const { settings } = useProviderSettings();
+  const { user } = useAuth();
   const triage = useTriage();
   const result = triage.result;
+  const saved = useRef(false);
+
+  // Record the assessment for signed-in users. Runs once per result, and
+  // waits a beat for the facility search so the saved entry can include the
+  // nearest one — but saves regardless if that search never lands, since the
+  // assessment itself is the thing worth keeping.
+  useEffect(() => {
+    if (!user || !result || saved.current) return;
+
+    const save = () => {
+      if (saved.current) return;
+      saved.current = true;
+      const nearest = triage.facilities?.[0];
+      addHistoryEntry(user.id, {
+        description: triage.description,
+        result,
+        locationLabel: triage.resolvedLocationLabel,
+        nearestFacility: nearest
+          ? { name: nearest.name, etaSeconds: nearest.etaSeconds }
+          : undefined,
+      });
+    };
+
+    if (triage.facilities !== undefined || triage.facilitiesError) {
+      save();
+      return;
+    }
+
+    // With no location given the facility search never runs, so waiting on it
+    // would mean never saving at all. Save the assessment on its own instead.
+    const timer = setTimeout(save, 6000);
+    return () => clearTimeout(timer);
+  }, [
+    user,
+    result,
+    triage.facilities,
+    triage.facilitiesError,
+    triage.description,
+    triage.resolvedLocationLabel,
+  ]);
 
   if (!result) {
     // Guards against a direct/refresh navigation with no session in memory.

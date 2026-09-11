@@ -71,7 +71,28 @@ Pages serves a project site from — asset URLs break without it.
 - `processing.tsx` — runs the assessment; handles the clarify-and-retry loop
   when the model says it needs more detail, without restarting the flow
 - `result.tsx` — severity, recommended action, red flags, nearby facilities
-- `settings.tsx` — per-function provider choice + BYOK key entry
+- `history.tsx` — past assessments, for signed-in users
+- `settings.tsx` — account, per-function provider choice + BYOK key entry
+
+### Accounts and history
+
+Sign in with Google (web only) keeps a history of past assessments. Because
+there is no backend, this is deliberately modest and worth stating plainly:
+
+- Google Identity Services runs entirely in the browser and returns a signed
+  ID token. The profile is read out of it to identify the account. **The
+  token's signature is not verified** — there's no server to verify it
+  against, and nothing privileged sits behind it. It separates one person's
+  history from another's on a device; it is not an authorization boundary.
+- History is stored **locally per account** (`localStorage` on web), not in
+  the cloud. Signing in on another browser starts an empty history.
+- Cross-device sync would need a real backend — Firebase or Supabase would
+  drop in behind `lib/store/history.ts` without touching the screens.
+
+To enable sign-in, create an **OAuth 2.0 Client ID** (Web application) in the
+Google Cloud console with this site's origin under *Authorized JavaScript
+origins*, then paste it into Settings → Account. The client ID is public by
+design in a browser OAuth flow — it is not a secret.
 
 ### Provider adapters (`lib/providers/`)
 Every one of the five pluggable functions — reasoning, voice, geocoding,

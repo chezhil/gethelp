@@ -1,0 +1,209 @@
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { PrimaryButton } from "../components/PrimaryButton";
+import { SeverityBadge } from "../components/SeverityBadge";
+import {
+  border,
+  colors,
+  CONTENT_MAX_WIDTH,
+  radius,
+  shadow,
+  spacing,
+  type,
+} from "../constants/theme";
+import { useAuth } from "../lib/store/auth";
+import { clearHistory, deleteHistoryEntry, loadHistory, type HistoryEntry } from "../lib/store/history";
+
+function formatWhen(at: number): string {
+  const date = new Date(at);
+  const today = new Date();
+  const sameDay = date.toDateString() === today.toDateString();
+  const time = date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  if (sameDay) return `Today, ${time}`;
+  return `${date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}, ${time}`;
+}
+
+function formatEta(seconds?: number): string | null {
+  if (seconds == null) return null;
+  const mins = Math.round(seconds / 60);
+  return mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)} h ${mins % 60} min`;
+}
+
+export default function HistoryScreen() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [entries, setEntries] = useState<HistoryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      if (!user) {
+        setEntries([]);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      loadHistory(user.id).then((list) => {
+        if (active) {
+          setEntries(list);
+          setLoading(false);
+        }
+      });
+      return () => {
+        active = false;
+      };
+    }, [user])
+  );
+
+  async function removeEntry(id: string) {
+    if (!user) return;
+    await deleteHistoryEntry(user.id, id);
+    setEntries((prev) => prev.filter((e) => e.id !== id));
+  }
+
+  async function removeAll() {
+    if (!user) return;
+    await clearHistory(user.id);
+    setEntries([]);
+  }
+
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>History</Text>
+        <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Text style={styles.done}>Done</Text>
+        </Pressable>
+      </View>
+
+      {!user && (
+        <Text style={styles.empty}>Sign in to keep a record of your past assessments.</Text>
+      )}
+
+      {user && loading && <Text style={styles.empty}>Loading…</Text>}
+
+      {user && !loading && entries.length === 0 && (
+        <View style={styles.emptyBox}>
+          <Text style={styles.emptyTitle}>Nothing here yet</Text>
+          <Text style={styles.empty}>
+            Assessments you run while signed in will be saved here, on this device.
+          </Text>
+        </View>
+      )}
+
+      {user &&
+        entries.map((entry) => {
+          const eta = formatEta(entry.nearestFacility?.etaSeconds);
+          return (
+            <View key={entry.id} style={styles.card}>
+              <View style={styles.cardTop}>
+                <SeverityBadge tier={entry.severityTier} />
+                <Text style={styles.when}>{formatWhen(entry.at)}</Text>
+              </View>
+
+              {!!entry.likelyNature && <Text style={styles.nature}>{entry.likelyNature}</Text>}
+              <Text style={styles.description} numberOfLines={3}>
+                “{entry.description}”
+              </Text>
+
+              {!!entry.recommendedAction && (
+                <Text style={styles.action}>{entry.recommendedAction}</Text>
+              )}
+
+              {!!entry.nearestFacility && (
+                <Text style={styles.meta}>
+                  Nearest: {entry.nearestFacility.name}
+                  {eta ? ` · ${eta}` : ""}
+                </Text>
+              )}
+              {!!entry.locationLabel && <Text style={styles.meta}>{entry.locationLabel}</Text>}
+
+              <Pressable
+                onPress={() => removeEntry(entry.id)}
+                hitSlop={12}
+                style={styles.deleteButton}
+              >
+                <Text style={styles.deleteText}>Delete</Text>
+              </Pressable>
+            </View>
+          );
+        })}
+
+      {user && entries.length > 0 && (
+        <PrimaryButton
+          label="Clear all history"
+          variant="outline"
+          onPress={removeAll}
+          style={styles.clearAll}
+        />
+      )}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    padding: spacing.lg,
+    paddingTop: spacing.xxl,
+    backgroundColor: colors.bg,
+    flexGrow: 1,
+    width: "100%",
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: "center",
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: spacing.lg,
+    gap: spacing.md,
+  },
+  title: { ...type.display, color: colors.text, flexShrink: 1 },
+  done: {
+    ...type.bodyStrong,
+    color: colors.text,
+    backgroundColor: colors.yellow,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    overflow: "hidden",
+  },
+  emptyBox: {
+    backgroundColor: colors.surface,
+    borderWidth: border.width,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.lg,
+    ...shadow.sm,
+  },
+  emptyTitle: { ...type.subtitle, color: colors.text, marginBottom: spacing.xs },
+  empty: { ...type.body, color: colors.textMuted },
+  card: {
+    backgroundColor: colors.surface,
+    borderWidth: border.width,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    ...shadow.md,
+  },
+  cardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  when: { ...type.small, color: colors.textMuted },
+  nature: { ...type.subtitle, color: colors.text, marginBottom: spacing.xs },
+  description: { ...type.body, color: colors.textMuted, fontStyle: "italic" },
+  action: { ...type.bodyStrong, color: colors.text, marginTop: spacing.sm },
+  meta: { ...type.small, color: colors.textMuted, marginTop: spacing.xs },
+  deleteButton: { alignSelf: "flex-start", marginTop: spacing.sm, paddingVertical: spacing.xs },
+  deleteText: { ...type.small, color: colors.text, textDecorationLine: "underline" },
+  clearAll: { marginTop: spacing.md },
+});
