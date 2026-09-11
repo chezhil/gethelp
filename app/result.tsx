@@ -106,14 +106,14 @@ export default function ResultScreen() {
 
       {!!result.summary && (
         <View style={styles.summaryBox}>
-          <Text style={styles.sectionLabel}>What this might mean</Text>
+          <Text style={styles.cardLabel}>What this might mean</Text>
           <Text style={styles.summaryText}>{result.summary}</Text>
         </View>
       )}
 
       {result.firstAidSteps.length > 0 && (
         <View style={styles.firstAidBox}>
-          <Text style={styles.sectionLabel}>While you get help</Text>
+          <Text style={styles.cardLabel}>While you get help</Text>
           {result.firstAidSteps.map((step, i) => (
             <Text key={i} style={styles.firstAidStep}>
               {i + 1}. {step}
@@ -124,7 +124,7 @@ export default function ResultScreen() {
 
       {result.redFlags.length > 0 && (
         <View style={styles.flagsBox}>
-          <Text style={styles.sectionLabel}>Noted in your description</Text>
+          <Text style={styles.cardLabel}>Noted in your description</Text>
           {result.redFlags.map((flag, i) => (
             <Text key={i} style={styles.flag}>
               · {flag}
@@ -357,7 +357,13 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     opacity: 0.9,
   },
   nature: { ...type.display, color: colors.text, marginTop: spacing.md },
+  // In the page flow, where the top margin is what separates the label from
+  // whatever came before it.
   sectionLabel: { ...type.label, color: colors.textMuted, marginTop: spacing.lg, marginBottom: spacing.xs },
+  // The same label as the first child of a padded box, where that top margin
+  // stacked on the box's own padding and left 40px above the label against
+  // 16px on the other three sides — the boxes read visibly top-heavy.
+  cardLabel: { ...type.label, color: colors.textMuted, marginBottom: spacing.xs },
   action: { ...type.bodyStrong, color: colors.text },
   firstAidBox: {
     marginTop: spacing.md,
