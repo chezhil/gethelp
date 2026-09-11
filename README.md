@@ -16,7 +16,10 @@ H2S), 11 Sep 2026. Full problem statement: [docs/spec.md](docs/spec.md).
 
 ## Live app
 
-**https://chezhil.github.io/gethelp/** — works on phone and desktop.
+**https://gethelp-220323505123.asia-south1.run.app** — Cloud Run (primary)
+
+Also on GitHub Pages at **https://chezhil.github.io/gethelp/** — same build,
+different host.
 
 ### Try it (about a minute)
 
@@ -84,17 +87,32 @@ cross-origin requests, so there is no backend and nothing to operate.
 
 ## Deploying
 
-The site is a static export deployed to GitHub Pages from the `gh-pages`
-branch:
+Two hosts, one source. They differ in exactly one thing: GitHub Pages serves
+this repo from a `/gethelp` path prefix that every asset URL must carry,
+while Cloud Run serves from the root of its own domain, where that prefix
+404s every file. `app.config.js` switches `experiments.baseUrl` on an env
+var so neither build is a special case.
+
+**Cloud Run** (primary):
 
 ```bash
-npx expo export --platform web
-cp dist/index.html dist/404.html && touch dist/.nojekyll
-# then publish dist/ to the gh-pages branch
+npm run build:cloudrun
+gcloud run deploy gethelp --source . --region asia-south1 --allow-unauthenticated
 ```
 
-`experiments.baseUrl` in `app.json` sets the `/gethelp` path prefix that
-Pages serves a project site from — asset URLs break without it.
+The image is `nginx:alpine` with the static export copied in — no Node in the
+runtime image. `nginx.conf` does three things worth noting: listens on
+`$PORT` because Cloud Run assigns it, falls back to `index.html` so a refresh
+on `/result` isn't a 404, and caches hashed bundles for a year while sending
+`no-cache` on `index.html` — without that split, a deploy takes hours to
+reach anyone who has already visited.
+
+**GitHub Pages**:
+
+```bash
+npm run build:pages
+npx gh-pages -d dist -t
+```
 
 ## Architecture
 
