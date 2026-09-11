@@ -59,7 +59,8 @@
         {
           "locationWhenInUsePermission": "Used to find nearby hospitals and estimate how long it will take to reach them."
         }
-      ]
+      ],
+      "expo-status-bar"
     ]
   }
 }
