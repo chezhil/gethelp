@@ -3,15 +3,8 @@ import { useCallback, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { SeverityBadge } from "../components/SeverityBadge";
-import {
-  border,
-  colors,
-  CONTENT_MAX_WIDTH,
-  radius,
-  shadow,
-  spacing,
-  type,
-} from "../constants/theme";
+import { border, CONTENT_MAX_WIDTH, radius, shadow, spacing, type, type Colors } from "../constants/theme";
+import { useTheme, useThemedStyles } from "../lib/store/theme";
 import { clearHistory, deleteHistoryEntry, loadHistory, type HistoryEntry } from "../lib/store/history";
 
 function formatWhen(at: number): string {
@@ -30,6 +23,8 @@ function formatEta(seconds?: number): string | null {
 }
 
 export default function HistoryScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,7 +124,7 @@ export default function HistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: {
     padding: spacing.lg,
     paddingTop: spacing.xxl,

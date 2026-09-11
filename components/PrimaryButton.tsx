@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from "react-native";
-import { border, colors, radius, shadow, spacing, type } from "../constants/theme";
+import { border, radius, shadow, spacing, type, type Colors } from "../constants/theme";
+import { useTheme, useThemedStyles } from "../lib/store/theme";
 
 interface Props {
   label: string;
@@ -18,6 +19,8 @@ export function PrimaryButton({
   variant = "primary",
   style,
 }: Props) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const isOutline = variant === "outline";
   const isDanger = variant === "danger";
   const inactive = disabled || loading;
@@ -53,7 +56,7 @@ export function PrimaryButton({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   base: {
     borderRadius: radius.md,
     borderWidth: border.width,

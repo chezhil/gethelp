@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
-import { border, colors, radius, spacing, type } from "../constants/theme";
+import { border, radius, spacing, type, type Colors } from "../constants/theme";
+import { useTheme, useThemedStyles } from "../lib/store/theme";
 import { getApiKey } from "../lib/store/settings";
 import type { Coords, NearbyFacility } from "../lib/types";
 
@@ -25,6 +26,8 @@ export function FacilityMap({
   origin: Coords;
   facilities: NearbyFacility[];
 }) {
+  const { colors, scheme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -40,17 +43,33 @@ export function FacilityMap({
 
   if (!apiKey || failed || facilities.length === 0) return null;
 
-  // Blue dot for you, numbered orange pins for facilities in ETA order — the
-  // same order as the cards below, so pin 1 is the first card.
-  const youMarker = `markers=color:0x3E5C76%7Clabel:Y%7C${origin.lat},${origin.lng}`;
+  const dark = scheme === "dark";
+
+  // Marker fills are chosen against the map tile, not the app background —
+  // the "you" pin has to stay legible on whichever basemap is under it.
+  const youColor = dark ? "0x9FC4E8" : "0x3E5C76";
+  const youMarker = `markers=color:${youColor}%7Clabel:Y%7C${origin.lat},${origin.lng}`;
   const facilityMarkers = facilities
     .slice(0, 5)
     .map((f, i) => `markers=color:0xE07A3F%7Clabel:${i + 1}%7C${f.lat},${f.lng}`)
     .join("&");
 
+  // An unstyled map tile is a bright white rectangle, which is exactly the
+  // thing dark mode exists to avoid on a screen someone is looking at in the
+  // dark. Static Maps takes the same style rules as the JS SDK.
+  const darkMapStyle = dark
+    ? "&style=element:geometry%7Ccolor:0x1F2226" +
+      "&style=element:labels.text.stroke%7Ccolor:0x1F2226" +
+      "&style=element:labels.text.fill%7Ccolor:0x9A9DA4" +
+      "&style=feature:road%7Celement:geometry%7Ccolor:0x33373D" +
+      "&style=feature:road%7Celement:labels.text.fill%7Ccolor:0xB8BBC1" +
+      "&style=feature:poi%7Cvisibility:off" +
+      "&style=feature:water%7Celement:geometry%7Ccolor:0x14222E"
+    : "";
+
   const url =
     `https://maps.googleapis.com/maps/api/staticmap?size=${WIDTH}x${HEIGHT}&scale=2` +
-    `&${youMarker}&${facilityMarkers}&key=${apiKey}`;
+    `&${youMarker}&${facilityMarkers}${darkMapStyle}&key=${apiKey}`;
 
   return (
     <View style={styles.wrap}>
@@ -69,7 +88,7 @@ export function FacilityMap({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   wrap: { marginBottom: spacing.md },
   map: {
     width: "100%",

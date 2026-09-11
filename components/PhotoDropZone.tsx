@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import { border, colors, radius, shadow, spacing, type } from "../constants/theme";
+import { border, radius, shadow, spacing, type, type Colors } from "../constants/theme";
+import { useTheme, useThemedStyles } from "../lib/store/theme";
 
 /** Gemini's inline image limit is generous, but a 20MP phone photo isn't worth sending. */
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -18,6 +19,8 @@ interface Props {
  * anyone using a keyboard or a trackpad they'd rather not drag with.
  */
 export function PhotoDropZone({ onPhoto }: Props) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const hostRef = useRef<View | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -126,7 +129,7 @@ export function PhotoDropZone({ onPhoto }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   zone: {
     borderWidth: border.width,
     borderColor: colors.border,

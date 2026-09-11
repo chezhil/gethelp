@@ -2,7 +2,8 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TextInput, View } from "react-native";
 import { PrimaryButton } from "../components/PrimaryButton";
-import { border, CONTENT_MAX_WIDTH, colors, radius, shadow, spacing, type } from "../constants/theme";
+import { border, CONTENT_MAX_WIDTH, radius, shadow, spacing, type, type Colors } from "../constants/theme";
+import { useTheme, useThemedStyles } from "../lib/store/theme";
 import { assessSeverity } from "../lib/providers/reasoning";
 import { getMedicalProfile, useProviderSettings } from "../lib/store/settings";
 import { useTriage } from "../lib/store/triage";
@@ -12,6 +13,8 @@ const LOADING_MESSAGES = ["Analyzing your description…", "Thinking this throug
 type Phase = "loading" | "clarify" | "error";
 
 export default function ProcessingScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { settings, loaded } = useProviderSettings();
   const triage = useTriage();
@@ -134,7 +137,7 @@ export default function ProcessingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",

@@ -7,7 +7,8 @@ import { FacilityCard } from "../components/FacilityCard";
 import { FacilityMap } from "../components/FacilityMap";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { SeverityBadge } from "../components/SeverityBadge";
-import { border, CONTENT_MAX_WIDTH, colors, radius, severityAction, shadow, spacing, type } from "../constants/theme";
+import { border, CONTENT_MAX_WIDTH, radius, severityAction, shadow, spacing, type, type Colors } from "../constants/theme";
+import { useTheme, useThemedStyles } from "../lib/store/theme";
 import { geocode } from "../lib/providers/geocoding";
 import { nearbyFacilities } from "../lib/providers/nearby";
 import { route as fetchRoute } from "../lib/providers/directions";
@@ -17,6 +18,8 @@ import { useTriage } from "../lib/store/triage";
 import type { Coords, NearbyFacility } from "../lib/types";
 
 export default function ResultScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { settings } = useProviderSettings();
   const triage = useTriage();
@@ -133,6 +136,8 @@ export default function ResultScreen() {
 }
 
 function FacilitiesSection({ tier, mentioned }: { tier: string; mentioned?: string }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { settings } = useProviderSettings();
   const triage = useTriage();
   const [loading, setLoading] = useState(false);
@@ -290,7 +295,7 @@ function FacilitiesSection({ tier, mentioned }: { tier: string; mentioned?: stri
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: {
     padding: spacing.lg,
     paddingTop: spacing.xxl,

@@ -1,15 +1,10 @@
 import { StyleSheet, Text, View } from "react-native";
-import {
-  border,
-  colors,
-  radius,
-  severityLabel,
-  shadow,
-  spacing,
-  type SeverityTier,
-} from "../constants/theme";
+import { border, radius, severityLabel, shadow, spacing, type Colors, type SeverityTier } from "../constants/theme";
+import { useTheme, useThemedStyles } from "../lib/store/theme";
 
 export function SeverityBadge({ tier }: { tier: SeverityTier }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const palette = colors[tier];
   const urgent = tier === "severe" || tier === "critical";
   return (
@@ -27,7 +22,7 @@ export function SeverityBadge({ tier }: { tier: SeverityTier }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   badge: {
     alignSelf: "flex-start",
     paddingVertical: spacing.sm,

@@ -188,3 +188,29 @@ without depending on colour alone.
 
 The layout is one centred column capped at 640px: it fills a phone screen and
 stops stretching across a desktop monitor.
+
+### Dark mode
+
+Two palettes share one set of token names, so no screen knows which theme it
+is on. It follows the OS by default and can be pinned to Light or Dark under
+**Settings → Appearance**; the choice is remembered on the device.
+
+`StyleSheet.create` runs once when a module is first evaluated, so a
+stylesheet that closes over a palette can never change theme. Each component
+exports a `makeStyles(colors)` factory instead, and `useThemedStyles` re-runs
+it only when the palette actually changes. The factory parameter is named
+`colors`, so the style bodies read exactly as they did when the palette was a
+fixed import.
+
+The dark palette is not an inversion: the pastels become deep tints of the
+same hues, so a section that reads "calm green" in daylight still reads calm
+at night. Text sits at `#F2F1EE` rather than pure white, which glares on
+near-black — worth caring about in an app someone opens on a phone in the
+dark. Every piece of text on every screen clears WCAG AA against its own
+background (worst case 5.08:1, the emergency CTA at 5.62:1).
+
+Three things outside the React tree also have to follow: the page background
+the browser paints outside the root, React Navigation's own container (its
+default `#f2f2f2` shows through in overscroll and during the cross-fade
+between screens), and the Static Maps tile, which is styled dark so the map
+isn't a bright white rectangle in the middle of a dark page.

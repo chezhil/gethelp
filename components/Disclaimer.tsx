@@ -1,7 +1,10 @@
 import { StyleSheet, Text, View } from "react-native";
-import { border, colors, radius, shadow, spacing, type } from "../constants/theme";
+import { border, radius, shadow, spacing, type, type Colors } from "../constants/theme";
+import { useTheme, useThemedStyles } from "../lib/store/theme";
 
 export function Disclaimer() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.wrap}>
       <Text style={styles.text}>
@@ -11,7 +14,7 @@ export function Disclaimer() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   wrap: {
     marginTop: spacing.lg,
     marginBottom: spacing.lg,

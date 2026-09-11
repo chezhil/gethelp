@@ -15,12 +15,15 @@ import {
 } from "react-native";
 import { PhotoDropZone } from "../components/PhotoDropZone";
 import { PrimaryButton } from "../components/PrimaryButton";
-import { border, CONTENT_MAX_WIDTH, colors, radius, shadow, spacing, type } from "../constants/theme";
+import { border, CONTENT_MAX_WIDTH, radius, shadow, spacing, type, type Colors } from "../constants/theme";
+import { useTheme, useThemedStyles } from "../lib/store/theme";
 import { getApiKey, useProviderSettings } from "../lib/store/settings";
 import { useTriage } from "../lib/store/triage";
 import { useVoiceInput, VOICE_UNAVAILABLE_REASON } from "../lib/providers/voice";
 
 export default function InputScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { settings } = useProviderSettings();
   const triage = useTriage();
@@ -250,7 +253,7 @@ export default function InputScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: {
     padding: spacing.lg,
     paddingTop: spacing.xxl,

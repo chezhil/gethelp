@@ -1,7 +1,8 @@
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { border, CONTENT_MAX_WIDTH, colors, radius, shadow, spacing, type } from "../constants/theme";
+import { border, CONTENT_MAX_WIDTH, radius, shadow, spacing, type, type Colors } from "../constants/theme";
+import { useTheme, useThemedStyles, type ThemeMode } from "../lib/store/theme";
 import {
   API_KEY_SLOTS,
   getMedicalProfile,
@@ -24,6 +25,8 @@ function SegmentedRow<T extends string>({
   value: T;
   onChange: (v: T) => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.segmentRow}>
       {options.map((opt) => {
@@ -43,7 +46,32 @@ function SegmentedRow<T extends string>({
   );
 }
 
+function AppearanceRow() {
+  const { mode, scheme, setMode } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <>
+      <SegmentedRow<ThemeMode>
+        value={mode}
+        onChange={setMode}
+        options={[
+          { value: "system", label: "System" },
+          { value: "light", label: "Light" },
+          { value: "dark", label: "Dark" },
+        ]}
+      />
+      <Text style={styles.hint}>
+        {mode === "system"
+          ? `Following your device — currently ${scheme}.`
+          : `Always ${mode}, whatever the device is set to.`}
+      </Text>
+    </>
+  );
+}
+
 function MedicalProfileField() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const [value, setValue] = useState("");
   const [loaded, setLoaded] = useState(false);
 
@@ -80,6 +108,8 @@ function ApiKeyField({
   label: string;
   placeholder: string;
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const [value, setValue] = useState("");
   const [loaded, setLoaded] = useState(false);
 
@@ -111,6 +141,8 @@ function ApiKeyField({
 }
 
 export default function SettingsScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { settings, update, loaded } = useProviderSettings();
 
@@ -129,6 +161,10 @@ export default function SettingsScreen() {
 
       {!loaded ? null : (
         <>
+          <Section title="Appearance">
+            <AppearanceRow />
+          </Section>
+
           <Section title="Medical background">
             <Text style={styles.hint}>
               Optional. Conditions, medications or allergies that should change how an injury is
@@ -218,6 +254,8 @@ export default function SettingsScreen() {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -226,7 +264,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: {
     padding: spacing.lg,
     paddingTop: spacing.xxl,

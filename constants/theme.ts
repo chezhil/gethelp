@@ -1,8 +1,13 @@
-// Swiss-minimalist design tokens: off-white ground, soft pastel accents, one
+// Swiss-minimalist design tokens: quiet ground, soft pastel accents, one
 // muted action colour, thin hairline borders, restrained shadows. Urgency is
 // carried by type weight and size rather than louder colour.
+//
+// Two palettes, same token names. Components never import a palette directly
+// — they take one as an argument (see `useThemedStyles` in lib/store/theme),
+// so a theme change restyles the app without any screen knowing which theme
+// it is on.
 
-export const colors = {
+export const lightColors = {
   bg: "#FAFAF8", // off-white — not stark white, not cream
   surface: "#FFFFFF",
   border: "#E4E1D9",
@@ -31,7 +36,56 @@ export const colors = {
 
   danger: "#8C2F27",
   dangerText: "#FFFFFF",
-} as const;
+};
+
+/**
+ * The same design, at low luminance.
+ *
+ * Not an inversion: the pastels become deep tints of the same hues rather
+ * than flipping to their complements, so a section that reads "calm green"
+ * in daylight still reads calm at night. Text sits at #F2F1EE rather than
+ * pure white — full-white on near-black glares, especially on the phone
+ * screen someone actually reaches for in the dark, which is the whole point
+ * of this mode existing in an injury app.
+ */
+export const darkColors: typeof lightColors = {
+  bg: "#121316",
+  surface: "#1B1D21",
+  border: "#2F323A",
+  text: "#F2F1EE",
+  textMuted: "#9A9DA4",
+
+  yellow: "#332D1E",
+  lime: "#25301F",
+  cyan: "#1E2C34",
+  pink: "#33232A",
+  orange: "#352719",
+
+  // Accent and its text swap roles: a pale slate on dark, with dark type on
+  // top, keeps primary buttons the brightest thing on the screen.
+  accent: "#7FA6CC",
+  accentText: "#0E1318",
+
+  minor: { bg: "#1F2E1D", fg: "#B9D9B4", border: "#32492E" },
+  moderate: { bg: "#332C18", fg: "#E8D08C", border: "#4E432A" },
+  severe: { bg: "#3A2418", fg: "#F0BA9B", border: "#56392A" },
+  critical: { bg: "#3A1C1B", fg: "#F3A9A4", border: "#57302E" },
+
+  // White on red, as in light mode: the emergency CTA is the one element that
+  // must never be the marginal-contrast thing on the screen, and dark type on
+  // this red came out just under AA.
+  danger: "#B0443A",
+  dangerText: "#FFFFFF",
+};
+
+export type Colors = typeof lightColors;
+
+/**
+ * The light palette, for the few places that need a colour outside a themed
+ * component — module-scope defaults and the Static Maps marker URLs.
+ * Anything rendered should use `useTheme()` instead.
+ */
+export const colors = lightColors;
 
 export const spacing = {
   xs: 4,
@@ -65,11 +119,15 @@ export const border = {
 /**
  * Soft, low-contrast elevation — barely there, and only where depth is
  * functional. `boxShadow` works on both native (RN 0.76+) and web.
+ *
+ * Deliberately shared between themes: on the dark palette these all but
+ * disappear, which is correct. Depth on a dark ground comes from the
+ * surface/background lightness step, not from a drop shadow.
  */
 export const shadow = {
-  sm: { boxShadow: "0px 1px 2px rgba(27, 28, 30, 0.04)" },
-  md: { boxShadow: "0px 2px 6px rgba(27, 28, 30, 0.06)" },
-  lg: { boxShadow: "0px 4px 14px rgba(27, 28, 30, 0.10)" },
+  sm: { boxShadow: "0px 1px 2px rgba(0, 0, 0, 0.06)" },
+  md: { boxShadow: "0px 2px 6px rgba(0, 0, 0, 0.08)" },
+  lg: { boxShadow: "0px 4px 14px rgba(0, 0, 0, 0.14)" },
   none: { boxShadow: "0px 0px 0px rgba(0, 0, 0, 0)" },
 } as const;
 

@@ -1,7 +1,8 @@
 import { Linking, StyleSheet, Text, View } from "react-native";
 import { directionsUrl } from "../lib/providers/directions";
 import type { NearbyFacility } from "../lib/types";
-import { border, colors, radius, shadow, spacing, type } from "../constants/theme";
+import { border, radius, shadow, spacing, type, type Colors } from "../constants/theme";
+import { useTheme, useThemedStyles } from "../lib/store/theme";
 import { PrimaryButton } from "./PrimaryButton";
 
 function formatEta(seconds?: number): string {
@@ -18,6 +19,8 @@ function formatDistance(meters?: number): string {
 }
 
 export function FacilityCard({ facility }: { facility: NearbyFacility }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
@@ -50,7 +53,7 @@ export function FacilityCard({ facility }: { facility: NearbyFacility }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderWidth: border.width,
