@@ -21,6 +21,7 @@ import { requireOptionalNativeModule } from "expo-modules-core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 import type { VoiceProvider } from "../store/settings";
+import { reduceTranscript } from "./transcript";
 
 type SpeechModule = typeof import("expo-speech-recognition");
 
@@ -131,12 +132,15 @@ export function useVoiceInput(
       // instead. Appending every interim event (which is what this used to
       // do) produced "my my arm my arm is my arm is bleeding".
       native.addListener("result", (event) => {
-        const text = event.results?.[0]?.transcript ?? "";
-        if (event.isFinal) {
-          commit(text);
+        const next = reduceTranscript({
+          isFinal: event.isFinal,
+          transcript: event.results?.[0]?.transcript ?? "",
+        });
+        if (next.commit !== null) {
+          commit(next.commit);
         } else {
-          pendingRef.current = text;
-          setPartialTranscript(text);
+          pendingRef.current = next.pending;
+          setPartialTranscript(next.pending);
         }
       }),
       // A recognizer can stop on its own — a long pause, or the OS deciding

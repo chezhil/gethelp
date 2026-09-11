@@ -2,6 +2,10 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    // Node's test runner strips types and resolves the real file, so test
+    // imports carry the .ts extension. Safe here because nothing is emitted.
+    "allowImportingTsExtensions": true,
+    "types": ["node"],
     "paths": {
       "@/*": [
         "./*"

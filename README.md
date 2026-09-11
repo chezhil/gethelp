@@ -183,6 +183,37 @@ specific to that browser, clearing site data clears it, and another device
 starts empty. `lib/store/history.ts` is a small seam a real backend could sit
 behind if cross-device sync were ever wanted.
 
+## Tests
+
+```bash
+npm test        # 37 tests, no dependencies — Node's own runner
+npm run typecheck
+```
+
+The suite covers the logic where a bug is silent and costly rather than
+loud: the severity normalizer, the transcript reducer, and the HTTP error
+messages.
+
+The severity tests pin the safety rules. The load-bearing one is that an
+unrecognized tier from the model resolves to **severe**, not minor — failing
+toward more urgent is the whole posture of the app, and it is exactly the
+kind of default a later refactor could flip without anyone noticing. Others
+cover declining to clarify answering "moderate" rather than "minor", a
+`needsMoreInfo` with no question being rejected instead of hanging the flow,
+and the field coercion that keeps a malformed reply from reaching the screen.
+
+`lib/providers/transcript.ts` exists because of a shipped bug: interim speech
+results were each appended, turning one spoken sentence into "my my arm my
+arm is my arm is bleeding". The reducer is now pure and the regression is a
+test.
+
+Checked by mutation rather than by assuming: re-introducing the tier bug and
+the interim-append bug fails five tests between them.
+
+`reasoning-core.ts` holds the provider-independent half of the severity logic
+so it can be exercised without pulling react-native in through the settings
+store.
+
 ## Safety behavior implemented
 
 - Empty/near-empty description blocks submission client-side — no AI call
