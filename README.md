@@ -50,6 +50,13 @@ they pick, and then, separately and marked optional, the Google key that the
 nearby-hospital search and the map both need. Saying that second part plainly
 here is the point: it is otherwise discovered as an error message later.
 
+A third step covers voice input, place-name lookup and driving-time ETAs.
+Those are presented as changeable rather than as a decision, since each has a
+working free default — the point is that someone learns these switches exist
+and what the Google upgrade buys (traffic-aware ETAs, a recognizer that works
+in Safari), not that they have to answer. Choosing a Google option without a
+key says so inline rather than failing later.
+
 It is skippable — "Continue without a key" is a real path, and the Input
 screen's SETUP NEEDED banner stays as the gentler reminder. Completion is a
 stored flag rather than an inference from "is a key present", so someone who

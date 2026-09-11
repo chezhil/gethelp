@@ -14,7 +14,13 @@ import {
   type Colors,
 } from "../constants/theme";
 import { setOnboarded } from "../lib/store/onboarding";
-import { ReasoningProvider, useProviderSettings } from "../lib/store/settings";
+import {
+  DirectionsProvider,
+  GeocodingProvider,
+  ReasoningProvider,
+  VoiceProvider,
+  useProviderSettings,
+} from "../lib/store/settings";
 import { useTheme, useThemedStyles } from "../lib/store/theme";
 
 const GEMINI_KEYS_URL = "https://aistudio.google.com/apikey";
@@ -39,6 +45,7 @@ export default function WelcomeScreen() {
   const styles = useThemedStyles(makeStyles);
   const { settings, update } = useProviderSettings();
   const [hasReasoningKey, setHasReasoningKey] = useState(false);
+  const [hasGoogleKey, setHasGoogleKey] = useState(false);
 
   const isGemini = settings.reasoning === "gemini";
 
@@ -115,7 +122,12 @@ export default function WelcomeScreen() {
           list and no map.
         </Text>
 
-        <ApiKeyField slot="google" label="Google API key" placeholder="AIza…" />
+        <ApiKeyField
+          slot="google"
+          label="Google API key"
+          placeholder="AIza…"
+          onHasKeyChange={setHasGoogleKey}
+        />
 
         <Pressable
           onPress={() => Linking.openURL(GOOGLE_KEYS_URL)}
@@ -127,10 +139,70 @@ export default function WelcomeScreen() {
         </Pressable>
 
         <Text style={styles.cardFootnote}>
-          The same key also enables optional Google Speech-to-Text, Geocoding and Routes in
-          Settings. Those are off by default — the free, keyless OpenStreetMap and OSRM services
-          handle addresses and driving times, and your device handles voice.
+          The same key covers the three services in the next step, if you want them.
         </Text>
+      </View>
+
+      {/* 3 — everything with a working free default. Presented as changeable
+          rather than as a decision, so nobody feels they have to answer. */}
+      <View style={styles.card}>
+        <Text style={styles.step}>Step 3 · Optional</Text>
+        <Text style={styles.cardTitle}>Voice, addresses and driving times</Text>
+        <Text style={styles.cardBody}>
+          These all work already, for free and without a key. Switch one to Google only if you
+          want what the paid service does better.
+        </Text>
+
+        <ProviderChoice<VoiceProvider>
+          title="Voice input"
+          value={settings.voice}
+          onChange={(v) => update({ voice: v })}
+          options={[
+            { value: "device", label: "This device" },
+            { value: "google", label: "Google Speech-to-Text" },
+          ]}
+          googleValue="google"
+          hasGoogleKey={hasGoogleKey}
+          description={
+            settings.voice === "device"
+              ? "Your browser's own speech recognition. Free, nothing to set up — but it isn't available in every browser (notably Safari on iPhone)."
+              : "Google's recognizer. More consistent across browsers and accents."
+          }
+        />
+
+        <ProviderChoice<GeocodingProvider>
+          title="Turning a place name into a location"
+          value={settings.geocoding}
+          onChange={(v) => update({ geocoding: v })}
+          options={[
+            { value: "nominatim", label: "OpenStreetMap" },
+            { value: "google", label: "Google Geocoding" },
+          ]}
+          googleValue="google"
+          hasGoogleKey={hasGoogleKey}
+          description={
+            settings.geocoding === "nominatim"
+              ? "Used when you name a place in your description instead of using GPS. Free and keyless."
+              : "Better at informal and local place names than OpenStreetMap."
+          }
+        />
+
+        <ProviderChoice<DirectionsProvider>
+          title="Driving time to each hospital"
+          value={settings.directions}
+          onChange={(v) => update({ directions: v })}
+          options={[
+            { value: "osrm", label: "OSRM" },
+            { value: "google", label: "Google Routes" },
+          ]}
+          googleValue="google"
+          hasGoogleKey={hasGoogleKey}
+          description={
+            settings.directions === "osrm"
+              ? "Free public routing server. Gives a distance-based ETA that ignores current traffic."
+              : "Live traffic-aware ETAs — the difference that matters most when the answer is 'how fast can I get there'."
+          }
+        />
       </View>
 
       <PrimaryButton
@@ -149,6 +221,37 @@ export default function WelcomeScreen() {
         emergency, call your local emergency number first.
       </Text>
     </ScrollView>
+  );
+}
+
+/** One service row: the choice, what it means, and a nudge if it needs a key. */
+function ProviderChoice<T extends string>({
+  title,
+  description,
+  value,
+  onChange,
+  options,
+  googleValue,
+  hasGoogleKey,
+}: {
+  title: string;
+  description: string;
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: T; label: string }[];
+  googleValue: T;
+  hasGoogleKey: boolean;
+}) {
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <View style={styles.choice}>
+      <Text style={styles.choiceTitle}>{title}</Text>
+      <SegmentedRow<T> value={value} onChange={onChange} options={options} />
+      <Text style={styles.cardBody}>{description}</Text>
+      {value === googleValue && !hasGoogleKey && (
+        <Text style={styles.warn}>Needs the Google API key in Step 2 — add it above.</Text>
+      )}
+    </View>
   );
 }
 
@@ -211,6 +314,22 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     borderTopColor: colors.border,
   },
   mono: { color: colors.text, fontWeight: "600" },
+  choice: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: border.width,
+    borderTopColor: colors.border,
+  },
+  choiceTitle: { ...type.bodyStrong, color: colors.text, marginBottom: spacing.sm },
+  warn: {
+    ...type.small,
+    color: colors.text,
+    backgroundColor: colors.orange,
+    borderRadius: radius.sm,
+    padding: spacing.sm,
+    marginTop: spacing.sm,
+    overflow: "hidden",
+  },
   linkButton: { marginTop: spacing.sm, paddingVertical: spacing.xs, minHeight: 44, justifyContent: "center" },
   link: { ...type.small, color: colors.accent, fontWeight: "600" },
   cta: { marginTop: spacing.md },
