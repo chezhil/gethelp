@@ -1,7 +1,7 @@
 # GetHelp!
 
-A mobile app (Expo / React Native) that helps an injured person, or someone
-helping them, quickly:
+A web and mobile app (Expo / React Native) that helps an injured person, or
+someone helping them, quickly:
 
 1. Describe an injury — by text, voice, or optionally a photo
 2. Get an AI-assessed urgency tier and a recommended next step
@@ -14,19 +14,55 @@ the "not a diagnosis" disclaimer on screen.
 Built for PromptWars x Community (Build with AI / Google for Developers /
 H2S), 11 Sep 2026. Full problem statement: [docs/spec.md](docs/spec.md).
 
-## Running it
+## Live app
+
+**https://chezhil.github.io/gethelp/** — works on phone and desktop.
+
+### Try it (about a minute)
+
+The app ships with **no API keys**, by design: it never holds anyone's
+credentials, and each visitor uses their own. To run the full flow:
+
+1. Open the app and tap **Settings**
+2. Under **AI Reasoning**, paste a free Groq key from
+   [console.groq.com/keys](https://console.groq.com/keys) (no card required)
+3. Optional — under **Nearby Search**, add a Google API key with the Places
+   API enabled, to see nearby hospitals with ETAs
+4. Tap **Done**, describe an injury, and continue
+
+Severity assessment needs step 2. Everything else — geocoding and
+directions/ETA — runs on free, keyless OSM/OSRM services.
+
+## Running it locally
 
 ```bash
 npm install
-npx expo start
+npx expo start          # phone, via Expo Go
+npx expo start --web    # browser
 ```
 
-Scan the QR code with Expo Go, or press `i`/`a` for a simulator.
+One codebase targets web, iOS and Android. Every API key is entered at
+runtime in **Settings** and stored only on the user's own device — the
+keychain/keystore on native, `localStorage` on web (see `keyStore` in
+`lib/store/settings.tsx`). Nothing is bundled into the build, and a key is
+only ever sent to the provider it belongs to.
 
-The app works with no build-time secrets — every API key is entered by the
-user at runtime in **Settings** and stored only on-device (`expo-secure-store`
-for keys, `AsyncStorage` for the plain provider choice). Nothing is bundled,
-nothing is sent anywhere but straight to the provider the key belongs to.
+Every provider is called directly from the client; all five allow
+cross-origin requests, so there is no backend and nothing to operate.
+
+## Deploying
+
+The site is a static export deployed to GitHub Pages from the `gh-pages`
+branch:
+
+```bash
+npx expo export --platform web
+cp dist/index.html dist/404.html && touch dist/.nojekyll
+# then publish dist/ to the gh-pages branch
+```
+
+`experiments.baseUrl` in `app.json` sets the `/gethelp` path prefix that
+Pages serves a project site from — asset URLs break without it.
 
 ## Architecture
 
@@ -88,5 +124,14 @@ to Gemini in Settings re-enables it immediately.
 
 ## Design system
 
-Swiss minimalist grid, one accent color, pastel severity tiers whose *weight*
-(not saturation) carries urgency — see `constants/theme.ts` for every token.
+Neobrutalist: flat saturated colour, 3–4px black borders, hard offset shadows
+with no blur, heavy type and uppercase labels. Buttons press down into their
+own shadow. Every token lives in `constants/theme.ts`.
+
+Urgency is carried by weight and size as well as colour — the severity badge
+grows and thickens at severe/critical, and the emergency CTA keeps the
+thickest border and deepest shadow in the system — so the tiers stay legible
+without depending on colour alone.
+
+The layout is one centred column capped at 640px: it fills a phone screen and
+stops stretching across a desktop monitor.

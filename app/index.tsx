@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { border, CONTENT_MAX_WIDTH, colors, radius, shadow, spacing, type } from "../constants/theme";
-import { useProviderSettings } from "../lib/store/settings";
+import { getApiKey, useProviderSettings } from "../lib/store/settings";
 import { useTriage } from "../lib/store/triage";
 import { useVoiceInput, VOICE_UNAVAILABLE_REASON } from "../lib/providers/voice";
 
@@ -26,6 +26,22 @@ export default function InputScreen() {
   const [usingGps, setUsingGps] = useState(false);
   const [locationBusy, setLocationBusy] = useState(false);
   const [locationNote, setLocationNote] = useState<string | null>(null);
+  const [needsKey, setNeedsKey] = useState(false);
+
+  // Nothing works without a reasoning key, and this app ships with none by
+  // design — so say so up front rather than letting the first attempt fail.
+  // Re-checked on focus so it clears as soon as a key is added in Settings.
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      getApiKey(settings.reasoning).then((key) => {
+        if (active) setNeedsKey(!key);
+      });
+      return () => {
+        active = false;
+      };
+    }, [settings.reasoning])
+  );
 
   // GPT-OSS 120B (Groq) is text-only — hide the photo option entirely rather
   // than accept a photo that silently gets dropped.
@@ -100,6 +116,16 @@ export default function InputScreen() {
           Describe the injury in your own words. We'll help you figure out how urgently to get
           care.
         </Text>
+
+        {needsKey && (
+          <Pressable onPress={() => router.push("/settings")} style={styles.setupBanner}>
+            <Text style={styles.setupBannerTitle}>Setup needed</Text>
+            <Text style={styles.setupBannerText}>
+              Add a free {settings.reasoning === "gemini" ? "Gemini" : "Groq"} API key in Settings
+              to start. Your key stays on this device.
+            </Text>
+          </Pressable>
+        )}
 
         <TextInput
           value={triage.description}
@@ -241,6 +267,17 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   subtitle: { ...type.body, color: colors.textMuted, marginTop: spacing.xs, marginBottom: spacing.lg },
+  setupBanner: {
+    backgroundColor: colors.orange,
+    borderWidth: border.width,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    ...shadow.sm,
+  },
+  setupBannerTitle: { ...type.label, color: colors.text, marginBottom: spacing.xs },
+  setupBannerText: { ...type.small, color: colors.text },
   textArea: {
     ...type.body,
     color: colors.text,
