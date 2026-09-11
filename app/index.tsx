@@ -112,9 +112,15 @@ export default function InputScreen() {
         <View style={styles.row}>
           <Pressable
             onPress={voice.isListening ? voice.stop : voice.start}
-            style={[styles.iconButton, voice.isListening && styles.iconButtonActive]}
+            style={[
+              styles.iconButton,
+              voice.isListening && styles.iconButtonActive,
+              !voice.isAvailable && styles.iconButtonDisabled,
+            ]}
           >
-            <Text style={styles.iconButtonText}>{voice.isListening ? "◼ Stop" : "🎤 Voice"}</Text>
+            <Text style={styles.iconButtonText}>
+              {voice.isListening ? "◼ Stop" : voice.isAvailable ? "🎤 Voice" : "🎤 Voice (unavailable)"}
+            </Text>
           </Pressable>
 
           {photoSupported && (
@@ -124,6 +130,11 @@ export default function InputScreen() {
           )}
         </View>
         {voice.error && <Text style={styles.errorText}>{voice.error}</Text>}
+        {!voice.isAvailable && !voice.error && (
+          <Text style={styles.helperText}>
+            Voice input needs a development build — it isn't available in Expo Go.
+          </Text>
+        )}
 
         {photoSupported && triage.photoUri && (
           <View style={styles.photoPreviewWrap}>
@@ -207,6 +218,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   iconButtonActive: { backgroundColor: colors.powder, borderColor: colors.powderText },
+  iconButtonDisabled: { opacity: 0.5 },
   iconButtonText: { ...type.small, color: colors.text, fontWeight: "600" },
   errorText: { ...type.small, color: colors.danger, marginTop: spacing.xs },
   helperText: { ...type.small, color: colors.textMuted, marginTop: spacing.sm },
