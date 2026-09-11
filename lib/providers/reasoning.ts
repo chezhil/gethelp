@@ -3,6 +3,7 @@
 
 import { getApiKey } from "../store/settings";
 import type { SeverityResult, SeverityTier } from "../types";
+import { describeHttpError, fetchWithRetry } from "./http";
 
 export class ReasoningError extends Error {}
 
@@ -132,7 +133,7 @@ export async function assessWithGroq(input: AssessInput): Promise<SeverityResult
   const apiKey = await getApiKey("groq");
   if (!apiKey) throw new ReasoningError("No Groq API key set. Add one in Settings.");
 
-  const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const resp = await fetchWithRetry("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -152,20 +153,20 @@ export async function assessWithGroq(input: AssessInput): Promise<SeverityResult
         { role: "user", content: input.description },
       ],
     }),
-  });
+  }, { service: "Groq" });
 
   if (!resp.ok) {
     const body = await resp.text().catch(() => "");
-    throw new ReasoningError(`Groq request failed (${resp.status}): ${body.slice(0, 300)}`);
+    throw new ReasoningError(describeHttpError("Groq", resp.status, body, "Groq API key"));
   }
   const data = await resp.json();
   const text = data?.choices?.[0]?.message?.content;
-  if (typeof text !== "string") throw new ReasoningError("Groq response had no message content.");
-  if (!text.trim()) {
+  if (typeof text !== "string" || !text.trim()) {
     // gpt-oss ran out of its token budget mid-reasoning and never wrote a
-    // final answer — a distinct failure from "no field at all", worth its
-    // own message since raising max_tokens is the actual fix.
-    throw new ReasoningError("Groq's response was empty — it ran out of tokens while reasoning. Try again.");
+    // final answer.
+    throw new ReasoningError(
+      "Groq ran out of room before it finished answering. Try again — this is usually a one-off."
+    );
   }
   return normalize(extractJson(text), Boolean(input.skipClarification));
 }
@@ -185,7 +186,7 @@ export async function assessWithGemini(input: AssessInput): Promise<SeverityResu
     });
   }
 
-  const resp = await fetch(
+  const resp = await fetchWithRetry(
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
     {
       method: "POST",
@@ -203,12 +204,13 @@ export async function assessWithGemini(input: AssessInput): Promise<SeverityResu
           responseMimeType: "application/json",
         },
       }),
-    }
+    },
+    { service: "Gemini" }
   );
 
   if (!resp.ok) {
     const body = await resp.text().catch(() => "");
-    throw new ReasoningError(`Gemini request failed (${resp.status}): ${body.slice(0, 300)}`);
+    throw new ReasoningError(describeHttpError("Gemini", resp.status, body, "Gemini API key"));
   }
   const data = await resp.json();
   const candidate = data?.candidates?.[0];
@@ -217,13 +219,22 @@ export async function assessWithGemini(input: AssessInput): Promise<SeverityResu
     ? responseParts.map((p: { text?: string }) => p.text ?? "").join("")
     : "";
   if (!text) {
-    // Say *why* it was empty — blocked for safety, cut off, or something
-    // else — instead of an opaque "no text content".
-    const reason =
-      candidate?.finishReason ??
-      data?.promptFeedback?.blockReason ??
-      "no finishReason given";
-    throw new ReasoningError(`Gemini returned no text (${reason}).`);
+    // Translate Gemini's own reason codes into something actionable rather
+    // than showing "MAX_TOKENS" or "SAFETY" to someone who's just been hurt.
+    const reason = candidate?.finishReason ?? data?.promptFeedback?.blockReason;
+    if (reason === "SAFETY" || reason === "PROHIBITED_CONTENT" || reason === "BLOCKED") {
+      throw new ReasoningError(
+        "Gemini declined to assess this description. Try rephrasing it, or switch to Groq in Settings."
+      );
+    }
+    if (reason === "MAX_TOKENS") {
+      throw new ReasoningError(
+        "Gemini ran out of room before it finished answering. Try a shorter description."
+      );
+    }
+    throw new ReasoningError(
+      `Gemini returned an empty response${reason ? ` (${reason})` : ""}. Try again.`
+    );
   }
   return normalize(extractJson(text), Boolean(input.skipClarification));
 }

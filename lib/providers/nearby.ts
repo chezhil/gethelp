@@ -1,5 +1,6 @@
 import { getApiKey } from "../store/settings";
 import type { Coords, NearbyFacility, SeverityTier } from "../types";
+import { describeHttpError, fetchWithRetry } from "./http";
 
 export class NearbyError extends Error {}
 
@@ -22,12 +23,16 @@ export async function nearbyWithGooglePlaces(
   tier: SeverityTier
 ): Promise<NearbyFacility[]> {
   const apiKey = await getApiKey("google");
-  if (!apiKey) throw new NearbyError("No Google API key set. Add one in Settings.");
+  if (!apiKey) {
+    throw new NearbyError(
+      "Finding nearby hospitals needs a Google API key. Add one under Nearby Search in Settings."
+    );
+  }
 
   const includedTypes =
     tier === "critical" || tier === "severe" ? ["hospital"] : ["hospital", "doctor"];
 
-  const resp = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
+  const resp = await fetchWithRetry("https://places.googleapis.com/v1/places:searchNearby", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -45,10 +50,10 @@ export async function nearbyWithGooglePlaces(
         },
       },
     }),
-  });
+  }, { service: "Google Places" });
   if (!resp.ok) {
     const body = await resp.text().catch(() => "");
-    throw new NearbyError(`Google Places request failed (${resp.status}): ${body.slice(0, 200)}`);
+    throw new NearbyError(describeHttpError("Google Places", resp.status, body, "Google API key"));
   }
   const data = await resp.json();
   const places: unknown[] = Array.isArray(data?.places) ? data.places : [];

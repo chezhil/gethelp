@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TextInput, View } from "react-native";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { colors, spacing, type } from "../constants/theme";
-import { assessSeverity, ReasoningError } from "../lib/providers/reasoning";
+import { assessSeverity } from "../lib/providers/reasoning";
 import { useProviderSettings } from "../lib/store/settings";
 import { useTriage } from "../lib/store/triage";
 
@@ -46,7 +46,14 @@ export default function ProcessingScreen() {
       triage.setResult(result);
       router.replace("/result");
     } catch (err) {
-      setErrorText(err instanceof ReasoningError ? err.message : "Something went wrong. Please try again.");
+      // Every provider error already carries a written-for-humans message
+      // (see lib/providers/http.ts), including network drops — so show it
+      // rather than replacing it with something vaguer.
+      setErrorText(
+        err instanceof Error && err.message
+          ? err.message
+          : "Something went wrong. Please try again."
+      );
       setPhase("error");
     }
   }

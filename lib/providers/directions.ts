@@ -1,5 +1,6 @@
 import { getApiKey } from "../store/settings";
 import type { Coords, RouteResult } from "../types";
+import { describeHttpError, fetchWithRetry } from "./http";
 
 export class DirectionsError extends Error {}
 
@@ -13,8 +14,15 @@ export class DirectionsError extends Error {}
 export async function routeWithOSRM(origin: Coords, dest: Coords): Promise<RouteResult> {
   const coords = `${origin.lng},${origin.lat};${dest.lng},${dest.lat}`;
   const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`;
-  const resp = await fetch(url, { headers: { "User-Agent": "gethelp-app/1.0" } });
-  if (!resp.ok) throw new DirectionsError(`OSRM request failed (${resp.status}).`);
+  const resp = await fetchWithRetry(
+    url,
+    { headers: { "User-Agent": "gethelp-app/1.0" } },
+    { service: "the routing service" }
+  );
+  if (!resp.ok) {
+    const body = await resp.text().catch(() => "");
+    throw new DirectionsError(describeHttpError("The routing service", resp.status, body));
+  }
   const data = await resp.json();
   const route = data?.routes?.[0];
   if (!route) throw new DirectionsError("OSRM returned no route.");
@@ -26,7 +34,7 @@ export async function routeWithGoogle(origin: Coords, dest: Coords): Promise<Rou
   const apiKey = await getApiKey("google");
   if (!apiKey) throw new DirectionsError("No Google API key set. Add one in Settings.");
 
-  const resp = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+  const resp = await fetchWithRetry("https://routes.googleapis.com/directions/v2:computeRoutes", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -38,10 +46,12 @@ export async function routeWithGoogle(origin: Coords, dest: Coords): Promise<Rou
       destination: { location: { latLng: { latitude: dest.lat, longitude: dest.lng } } },
       travelMode: "DRIVE",
     }),
-  });
+  }, { service: "Google Routes" });
   if (!resp.ok) {
     const body = await resp.text().catch(() => "");
-    throw new DirectionsError(`Google Routes request failed (${resp.status}): ${body.slice(0, 200)}`);
+    throw new DirectionsError(
+      describeHttpError("Google Routes", resp.status, body, "Google API key")
+    );
   }
   const data = await resp.json();
   const route = data?.routes?.[0];

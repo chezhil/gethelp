@@ -30,6 +30,7 @@ function SegmentedRow<T extends string>({
           <Pressable
             key={opt.value}
             onPress={() => onChange(opt.value)}
+            hitSlop={6}
             style={[styles.segment, active && styles.segmentActive]}
           >
             <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{opt.label}</Text>
@@ -205,8 +206,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.sm,
+    minHeight: 48,
     paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
     alignItems: "center",
+    justifyContent: "center",
   },
   segmentActive: { backgroundColor: colors.powder, borderColor: colors.powderText },
   segmentText: { ...type.small, color: colors.textMuted, fontWeight: "600" },

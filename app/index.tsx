@@ -113,6 +113,7 @@ export default function InputScreen() {
         <View style={styles.row}>
           <Pressable
             onPress={voice.isListening ? voice.stop : voice.start}
+            hitSlop={8}
             style={[
               styles.iconButton,
               voice.isListening && styles.iconButtonActive,
@@ -126,10 +127,10 @@ export default function InputScreen() {
 
           {photoSupported && (
             <>
-              <Pressable onPress={() => pickPhoto(true)} style={styles.iconButton}>
+              <Pressable onPress={() => pickPhoto(true)} hitSlop={8} style={styles.iconButton}>
                 <Text style={styles.iconButtonText}>📷 Camera</Text>
               </Pressable>
-              <Pressable onPress={() => pickPhoto(false)} style={styles.iconButton}>
+              <Pressable onPress={() => pickPhoto(false)} hitSlop={8} style={styles.iconButton}>
                 <Text style={styles.iconButtonText}>🖼 Gallery</Text>
               </Pressable>
             </>
@@ -145,7 +146,11 @@ export default function InputScreen() {
         {photoSupported && triage.photoUri && (
           <View style={styles.photoPreviewWrap}>
             <Image source={{ uri: triage.photoUri }} style={styles.photoPreview} />
-            <Pressable onPress={() => triage.setPhoto(undefined, undefined)}>
+            <Pressable
+              onPress={() => triage.setPhoto(undefined, undefined, undefined)}
+              hitSlop={12}
+              style={styles.removePhotoButton}
+            >
               <Text style={styles.removePhoto}>Remove photo</Text>
             </Pressable>
           </View>
@@ -172,6 +177,7 @@ export default function InputScreen() {
         />
         <Pressable
           onPress={useCurrentLocation}
+          hitSlop={8}
           style={[styles.iconButton, usingGps && styles.iconButtonActive, styles.locationButton]}
         >
           <Text style={styles.iconButtonText}>
@@ -219,6 +225,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
+    // 48dp minimum touch target (Android accessibility guidance). These used
+    // to hug the label so tightly that only a direct hit on the text
+    // registered.
+    minHeight: 48,
+    justifyContent: "center",
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     backgroundColor: colors.surface,
@@ -230,7 +241,8 @@ const styles = StyleSheet.create({
   helperText: { ...type.small, color: colors.textMuted, marginTop: spacing.sm },
   photoPreviewWrap: { marginTop: spacing.sm },
   photoPreview: { width: "100%", height: 160, borderRadius: radius.md, backgroundColor: colors.border },
-  removePhoto: { ...type.small, color: colors.danger, marginTop: spacing.xs },
+  removePhotoButton: { alignSelf: "flex-start", paddingVertical: spacing.sm, minHeight: 44, justifyContent: "center" },
+  removePhoto: { ...type.small, color: colors.danger },
   label: { ...type.label, color: colors.textMuted, marginTop: spacing.lg, marginBottom: spacing.xs },
   input: {
     ...type.body,

@@ -59,5 +59,5 @@ const styles = StyleSheet.create({
   eta: { ...type.bodyStrong, color: colors.accent },
   address: { ...type.small, color: colors.textMuted, marginTop: 2 },
   distance: { ...type.small, color: colors.textMuted, marginTop: 2 },
-  directionsButton: { marginTop: spacing.sm, minHeight: 40, paddingVertical: spacing.sm },
+  directionsButton: { marginTop: spacing.sm, minHeight: 44, paddingVertical: spacing.sm },
 });

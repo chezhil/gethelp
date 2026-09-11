@@ -7,8 +7,8 @@ import { FacilityCard } from "../components/FacilityCard";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { SeverityBadge } from "../components/SeverityBadge";
 import { colors, radius, severityAction, spacing, type } from "../constants/theme";
-import { geocode, GeocodingError } from "../lib/providers/geocoding";
-import { nearbyFacilities, NearbyError } from "../lib/providers/nearby";
+import { geocode } from "../lib/providers/geocoding";
+import { nearbyFacilities } from "../lib/providers/nearby";
 import { route as fetchRoute } from "../lib/providers/directions";
 import { useProviderSettings } from "../lib/store/settings";
 import { useTriage } from "../lib/store/triage";
@@ -115,7 +115,10 @@ function FacilitiesSection({ tier }: { tier: string }) {
         withEta.sort((a, b) => (a.etaSeconds ?? Infinity) - (b.etaSeconds ?? Infinity));
         triage.setFacilities(withEta);
       } catch (err) {
-        const msg = err instanceof NearbyError ? err.message : "Could not load nearby facilities.";
+        const msg =
+          err instanceof Error && err.message
+            ? err.message
+            : "Could not load nearby facilities.";
         setError(msg);
         triage.setFacilities(undefined, msg);
       } finally {
@@ -135,7 +138,9 @@ function FacilitiesSection({ tier }: { tier: string }) {
         triage.setCoords(coords, geo.displayName);
         await runSearch(coords);
       } catch (err) {
-        setError(err instanceof GeocodingError ? err.message : "Could not resolve that location.");
+        setError(
+          err instanceof Error && err.message ? err.message : "Could not resolve that location."
+        );
         setLoading(false);
       }
     },
@@ -170,7 +175,7 @@ function FacilitiesSection({ tier }: { tier: string }) {
       started.current = true;
       await runSearch(coords);
     } catch {
-      setError("Could not get your location. Try typing it instead.");
+      setError("Couldn't get your location from GPS. Try typing an address instead.");
     } finally {
       setGpsBusy(false);
     }
@@ -267,6 +272,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   locationButtonsRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
-  locationBtn: { flex: 1, minHeight: 42, paddingVertical: spacing.sm },
+  locationBtn: { flex: 1, minHeight: 48, paddingVertical: spacing.sm },
   startOver: { marginTop: spacing.xl },
 });
