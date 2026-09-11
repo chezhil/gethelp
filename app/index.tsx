@@ -124,9 +124,14 @@ export default function InputScreen() {
           </Pressable>
 
           {photoSupported && (
-            <Pressable onPress={() => pickPhoto(false)} style={styles.iconButton}>
-              <Text style={styles.iconButtonText}>📷 Photo</Text>
-            </Pressable>
+            <>
+              <Pressable onPress={() => pickPhoto(true)} style={styles.iconButton}>
+                <Text style={styles.iconButtonText}>📷 Camera</Text>
+              </Pressable>
+              <Pressable onPress={() => pickPhoto(false)} style={styles.iconButton}>
+                <Text style={styles.iconButtonText}>🖼 Gallery</Text>
+              </Pressable>
+            </>
           )}
         </View>
         {voice.error && <Text style={styles.errorText}>{voice.error}</Text>}
@@ -208,7 +213,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     textAlignVertical: "top",
   },
-  row: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
+  row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.sm },
   iconButton: {
     borderWidth: 1,
     borderColor: colors.border,

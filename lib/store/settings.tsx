@@ -4,7 +4,7 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
-import { useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 export type ReasoningProvider = "groq" | "gemini";
 export type VoiceProvider = "device" | "google";
@@ -69,8 +69,22 @@ export async function setApiKey(slot: ApiKeySlot, value: string): Promise<void> 
   await SecureStore.setItemAsync(API_KEY_SLOTS[slot], value);
 }
 
-/** Hook: current settings + a setter that persists on every change. */
-export function useProviderSettings() {
+interface ProviderSettingsState {
+  settings: ProviderSettings;
+  update: (patch: Partial<ProviderSettings>) => void;
+  loaded: boolean;
+}
+
+// One shared source of truth for the whole app. This has to be a context, not
+// per-component state: expo-router keeps a screen mounted when you push
+// another on top of it, so the Input screen never re-reads storage after you
+// change a provider on the Settings screen. With per-component state, picking
+// Gemini in Settings left the Input screen still believing it was on Groq,
+// and the photo-attach button — gated on the reasoning provider — never
+// appeared.
+const ProviderSettingsContext = createContext<ProviderSettingsState | null>(null);
+
+export function ProviderSettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<ProviderSettings>(DEFAULT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
 
@@ -89,5 +103,19 @@ export function useProviderSettings() {
     });
   }, []);
 
-  return { settings, update, loaded };
+  const value = useMemo<ProviderSettingsState>(
+    () => ({ settings, update, loaded }),
+    [settings, update, loaded]
+  );
+
+  return (
+    <ProviderSettingsContext.Provider value={value}>{children}</ProviderSettingsContext.Provider>
+  );
+}
+
+/** Current settings + a setter that persists on every change, shared app-wide. */
+export function useProviderSettings(): ProviderSettingsState {
+  const ctx = useContext(ProviderSettingsContext);
+  if (!ctx) throw new Error("useProviderSettings must be used within a ProviderSettingsProvider");
+  return ctx;
 }
