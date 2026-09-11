@@ -59,7 +59,12 @@ export default function HistoryScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>History</Text>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Close history"
+        >
           <Text style={styles.done}>Done</Text>
         </Pressable>
       </View>
@@ -103,6 +108,8 @@ export default function HistoryScreen() {
 
             <Pressable
               onPress={() => removeEntry(entry.id)}
+              accessibilityRole="button"
+              accessibilityLabel={`Delete the assessment from ${formatWhen(entry.at)}`}
               hitSlop={12}
               style={styles.deleteButton}
             >

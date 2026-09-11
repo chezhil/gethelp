@@ -86,6 +86,8 @@ export default function ResultScreen() {
       {isUrgent && (
         <Pressable
           onPress={() => Linking.openURL("tel:112")}
+          accessibilityRole="button"
+          accessibilityLabel="Call emergency services on 112"
           style={styles.emergencyCta}
         >
           <Text style={styles.emergencyCtaText}>🚨 Call emergency services</Text>

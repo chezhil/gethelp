@@ -152,10 +152,20 @@ export default function InputScreen() {
         <View style={styles.headerRow}>
           <Text style={styles.title}>What happened?</Text>
           <View style={styles.headerActions}>
-            <Pressable onPress={() => router.push("/history")} hitSlop={12}>
+            <Pressable
+              onPress={() => router.push("/history")}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="View past assessments"
+            >
               <Text style={styles.historyLink}>History</Text>
             </Pressable>
-            <Pressable onPress={() => router.push("/settings")} hitSlop={12}>
+            <Pressable
+              onPress={() => router.push("/settings")}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Open settings"
+            >
               <Text style={styles.settingsLink}>Settings</Text>
             </Pressable>
           </View>
@@ -166,7 +176,12 @@ export default function InputScreen() {
         </Text>
 
         {needsKey && (
-          <Pressable onPress={() => router.push("/settings")} style={styles.setupBanner}>
+          <Pressable
+            onPress={() => router.push("/settings")}
+            style={styles.setupBanner}
+            accessibilityRole="button"
+            accessibilityLabel="Setup needed. Open settings to add an API key."
+          >
             <Text style={styles.setupBannerTitle}>Setup needed</Text>
             <Text style={styles.setupBannerText}>
               {settings.reasoning === "gemini"
@@ -189,6 +204,15 @@ export default function InputScreen() {
         <View style={styles.row}>
           <Pressable
             onPress={voice.isListening ? voice.stop : voice.start}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !voice.isAvailable }}
+            accessibilityLabel={
+              voice.isListening
+                ? "Stop voice input"
+                : voice.isAvailable
+                  ? "Describe the injury by voice"
+                  : "Voice input unavailable in this browser"
+            }
             hitSlop={8}
             style={[
               styles.iconButton,
@@ -207,10 +231,22 @@ export default function InputScreen() {
 
           {photoSupported && !showDropZone && (
             <>
-              <Pressable onPress={() => pickPhoto(true)} hitSlop={8} style={styles.iconButton}>
+              <Pressable
+                onPress={() => pickPhoto(true)}
+                hitSlop={8}
+                style={styles.iconButton}
+                accessibilityRole="button"
+                accessibilityLabel="Take a photo of the injury"
+              >
                 <Text style={styles.iconButtonText}>📷 Camera</Text>
               </Pressable>
-              <Pressable onPress={() => pickPhoto(false)} hitSlop={8} style={styles.iconButton}>
+              <Pressable
+                onPress={() => pickPhoto(false)}
+                hitSlop={8}
+                style={styles.iconButton}
+                accessibilityRole="button"
+                accessibilityLabel="Choose a photo from your gallery"
+              >
                 <Text style={styles.iconButtonText}>🖼 Gallery</Text>
               </Pressable>
             </>
@@ -240,6 +276,8 @@ export default function InputScreen() {
             <Image source={{ uri: triage.photoUri }} style={styles.photoPreview} />
             <Pressable
               onPress={() => triage.setPhoto(undefined, undefined, undefined)}
+              accessibilityRole="button"
+              accessibilityLabel="Remove the attached photo"
               hitSlop={12}
               style={styles.removePhotoButton}
             >

@@ -81,7 +81,12 @@ export default function SettingsScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Settings</Text>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Close settings"
+        >
           <Text style={styles.done}>Done</Text>
         </Pressable>
       </View>

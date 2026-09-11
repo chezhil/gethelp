@@ -29,6 +29,11 @@ export function PrimaryButton({
     <Pressable
       onPress={onPress}
       disabled={inactive}
+      accessibilityRole="button"
+      // While loading the button renders a spinner and no text, so without an
+      // explicit label a screen reader announces nothing at all.
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !!inactive, busy: !!loading }}
       style={({ pressed }) => [
         styles.base,
         isOutline && styles.outline,

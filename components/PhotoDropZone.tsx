@@ -115,7 +115,11 @@ export function PhotoDropZone({ onPhoto }: Props) {
 
   return (
     <View>
-      <Pressable onPress={() => inputRef.current?.click()} accessibilityRole="button">
+      <Pressable
+        onPress={() => inputRef.current?.click()}
+        accessibilityRole="button"
+        accessibilityLabel="Add a photo of the injury: drag one here, or activate to browse"
+      >
         <View ref={hostRef} style={[styles.zone, dragging && styles.zoneActive]}>
           <Text style={styles.icon}>🖼</Text>
           <Text style={styles.title}>
