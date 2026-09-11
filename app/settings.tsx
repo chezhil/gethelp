@@ -2,6 +2,8 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { border, CONTENT_MAX_WIDTH, radius, shadow, spacing, type, type Colors } from "../constants/theme";
+import { ApiKeyField } from "../components/ApiKeyField";
+import { SegmentedRow } from "../components/SegmentedRow";
 import { useTheme, useThemedStyles, type ThemeMode } from "../lib/store/theme";
 import {
   API_KEY_SLOTS,
@@ -15,36 +17,6 @@ import {
   setApiKey,
   useProviderSettings,
 } from "../lib/store/settings";
-
-function SegmentedRow<T extends string>({
-  options,
-  value,
-  onChange,
-}: {
-  options: { value: T; label: string }[];
-  value: T;
-  onChange: (v: T) => void;
-}) {
-  const { colors } = useTheme();
-  const styles = useThemedStyles(makeStyles);
-  return (
-    <View style={styles.segmentRow}>
-      {options.map((opt) => {
-        const active = opt.value === value;
-        return (
-          <Pressable
-            key={opt.value}
-            onPress={() => onChange(opt.value)}
-            hitSlop={6}
-            style={[styles.segment, active && styles.segmentActive]}
-          >
-            <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{opt.label}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
 
 function AppearanceRow() {
   const { mode, scheme, setMode } = useTheme();
@@ -96,47 +68,6 @@ function MedicalProfileField() {
       multiline
       style={styles.profileInput}
     />
-  );
-}
-
-function ApiKeyField({
-  slot,
-  label,
-  placeholder,
-}: {
-  slot: keyof typeof API_KEY_SLOTS;
-  label: string;
-  placeholder: string;
-}) {
-  const { colors } = useTheme();
-  const styles = useThemedStyles(makeStyles);
-  const [value, setValue] = useState("");
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    getApiKey(slot).then((v) => {
-      setValue(v ?? "");
-      setLoaded(true);
-    });
-  }, [slot]);
-
-  return (
-    <View style={styles.keyField}>
-      <Text style={styles.keyLabel}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={(v) => {
-          setValue(v);
-          setApiKey(slot, v);
-        }}
-        placeholder={loaded ? placeholder : "Loading…"}
-        placeholderTextColor={colors.textMuted}
-        secureTextEntry
-        autoCapitalize="none"
-        autoCorrect={false}
-        style={styles.keyInput}
-      />
-    </View>
   );
 }
 
@@ -299,21 +230,6 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     ...shadow.md,
   },
   sectionTitle: { ...type.bodyStrong, color: colors.text, marginBottom: spacing.sm },
-  segmentRow: { flexDirection: "row", gap: spacing.xs },
-  segment: {
-    flex: 1,
-    borderWidth: border.width,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    minHeight: 48,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xs,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  segmentActive: { backgroundColor: colors.yellow, ...shadow.sm },
-  segmentText: { ...type.small, color: colors.textMuted, fontWeight: "600", textAlign: "center" },
-  segmentTextActive: { color: colors.text },
   hint: { ...type.small, color: colors.textMuted, marginTop: spacing.sm },
   profileInput: {
     ...type.body,
@@ -326,16 +242,5 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     marginTop: spacing.sm,
     backgroundColor: colors.bg,
     textAlignVertical: "top",
-  },
-  keyField: { marginTop: spacing.sm },
-  keyLabel: { ...type.small, color: colors.textMuted, marginBottom: spacing.xs },
-  keyInput: {
-    ...type.body,
-    color: colors.text,
-    borderWidth: border.width,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    padding: spacing.sm,
-    backgroundColor: colors.bg,
   },
 });

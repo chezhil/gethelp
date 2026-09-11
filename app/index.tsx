@@ -17,6 +17,7 @@ import { PhotoDropZone } from "../components/PhotoDropZone";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { border, CONTENT_MAX_WIDTH, radius, shadow, spacing, type, type Colors } from "../constants/theme";
 import { useTheme, useThemedStyles } from "../lib/store/theme";
+import { hasOnboarded } from "../lib/store/onboarding";
 import { getApiKey, useProviderSettings } from "../lib/store/settings";
 import { useTriage } from "../lib/store/triage";
 import { useVoiceInput, VOICE_UNAVAILABLE_REASON } from "../lib/providers/voice";
@@ -42,6 +43,21 @@ export default function InputScreen() {
   const [locationStatus, setLocationStatus] = useState<"pending" | "ready" | "unavailable">(
     "pending"
   );
+  // undefined until storage answers — rendering the input screen first and
+  // then yanking it away would flash the wrong screen on every cold start.
+  const [onboarded, setOnboarded] = useState<boolean | undefined>(undefined);
+
+  useEffect(() => {
+    let active = true;
+    hasOnboarded().then((done) => {
+      if (!active) return;
+      setOnboarded(done);
+      if (!done) router.replace("/welcome");
+    });
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   // Location is handled for you: we ask for it once on open and keep it in
   // the background. There's no location field — if you'd rather say where you
@@ -121,6 +137,10 @@ export default function InputScreen() {
     if (!canSubmit) return;
     router.push("/processing");
   }
+
+  // Blank rather than a spinner: this resolves in a frame or two, and a
+  // spinner that appears and vanishes reads as jank.
+  if (onboarded === undefined || !onboarded) return <View style={styles.blank} />;
 
   return (
     <KeyboardAvoidingView
@@ -254,6 +274,7 @@ export default function InputScreen() {
 }
 
 const makeStyles = (colors: Colors) => StyleSheet.create({
+  blank: { flex: 1, backgroundColor: colors.bg },
   container: {
     padding: spacing.lg,
     paddingTop: spacing.xxl,

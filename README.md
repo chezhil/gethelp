@@ -23,19 +23,40 @@ H2S), 11 Sep 2026. Full problem statement: [docs/spec.md](docs/spec.md).
 The app ships with **no API keys**, by design: it never holds anyone's
 credentials, and each visitor uses their own. To run the full flow:
 
-1. Open the app — it says up front that a key is needed and links to Settings
-2. Under **AI Reasoning**, paste a free Gemini key from
+1. Open the app — the first visit walks you through setup
+2. Pick the model and paste a free Gemini key from
    [aistudio.google.com/apikey](https://aistudio.google.com/apikey). Gemini is
    the default because it is the vision-capable path, so photos work. Don't
    want a Google account? Switch that row to **Groq** and use a free key from
    [console.groq.com/keys](https://console.groq.com/keys) instead — no card
    either way, and the app says so on the setup banner.
-3. Optional — under **Nearby Search**, add a Google API key with the Places
-   API enabled, to see nearby hospitals with ETAs and a map
-4. Tap **Done**, describe an injury, and continue
+3. Optional — add a Google API key with the **Places API (New)** enabled, to
+   see nearby hospitals with ETAs and a map
+4. Start, describe an injury, and continue
 
 Severity assessment needs step 2. Everything else — geocoding and
-directions/ETA — runs on free, keyless OSM/OSRM services.
+directions/ETA — runs on free, keyless OSM/OSRM services. All of this is also
+in **Settings**, any time.
+
+### First-run setup
+
+The app ships with no API keys by design — it never holds anyone's
+credentials, and each visitor brings their own. That is a good principle and
+a bad first impression if the first thing someone meets is a text box that
+fails when they press Continue. So `app/welcome.tsx` asks the questions up
+front, once: which model should assess injuries (with the trade-off stated —
+Gemini reads photos, Groq needs no Google account), the key for whichever
+they pick, and then, separately and marked optional, the Google key that the
+nearby-hospital search and the map both need. Saying that second part plainly
+here is the point: it is otherwise discovered as an error message later.
+
+It is skippable — "Continue without a key" is a real path, and the Input
+screen's SETUP NEEDED banner stays as the gentler reminder. Completion is a
+stored flag rather than an inference from "is a key present", so someone who
+deliberately skips isn't asked again on every launch.
+
+The screen drives the same `SegmentedRow` and `ApiKeyField` components as
+Settings, so the two can't drift apart.
 
 ## Running it locally
 

@@ -66,6 +66,7 @@ function ThemedShell() {
         }}
       >
         <Stack.Screen name="index" />
+        <Stack.Screen name="welcome" />
         <Stack.Screen name="processing" />
         <Stack.Screen name="result" />
         <Stack.Screen name="settings" options={{ animation: "slide_from_bottom" }} />
