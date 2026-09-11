@@ -6,6 +6,7 @@ import {
   normalize,
   systemPromptFor,
   userMessageFor,
+  withClarification,
 } from "../lib/providers/reasoning-core.ts";
 
 describe("normalize — safety behaviour", () => {
@@ -128,5 +129,77 @@ describe("userMessageFor", () => {
 describe("systemPromptFor", () => {
   it("always forbids diagnosis", () => {
     assert.match(systemPromptFor({ description: "x" }), /never diagnose/i);
+  });
+});
+
+// The clarify-and-retry loop is the flow this app promises and the one that
+// was quietly broken: the answer was appended to React state and the retry
+// re-read the *previous* render's description, so the model was re-sent the
+// original vague text and asked the same question again. Returning the
+// composed string — rather than only writing it to state — is what lets the
+// caller send the exact text it just recorded, in the same tick.
+describe("withClarification", () => {
+  it("carries the answer into the text that gets re-submitted", () => {
+    const next = withClarification("my arm hurts", "it's my left forearm, and it's swollen");
+    assert.match(next, /my arm hurts/);
+    assert.match(next, /left forearm/);
+    assert.match(next, /swollen/);
+  });
+
+  it("keeps the original description ahead of the added detail", () => {
+    const next = withClarification("I fell", "off a ladder, about 3 metres");
+    assert.ok(next.indexOf("I fell") < next.indexOf("off a ladder"));
+  });
+
+  it("labels the addition so the model can tell it from the first description", () => {
+    assert.match(withClarification("I fell", "off a ladder"), /Additional detail:/);
+  });
+
+  it("accumulates across more than one round of clarification", () => {
+    const once = withClarification("it hurts", "my ankle");
+    const twice = withClarification(once, "I can't put weight on it");
+    assert.match(twice, /it hurts/);
+    assert.match(twice, /my ankle/);
+    assert.match(twice, /can't put weight on it/);
+  });
+
+  it("trims the answer and ignores one that is only whitespace", () => {
+    assert.match(withClarification("I fell", "  off a ladder  "), /detail: off a ladder$/);
+    assert.equal(withClarification("I fell", "   "), "I fell");
+  });
+});
+
+// Every other failure in this app is phrased for someone who has just been
+// injured. A truncated model reply used to throw a raw SyntaxError straight
+// through to the screen.
+describe("extractJson — malformed replies", () => {
+  const malformed = [
+    ["truncated mid-object", '{"severityTier": "moder'],
+    ["truncated after a key", '{"severityTier":'],
+    ["trailing comma", '{"severityTier": "minor",}'],
+    ["single quotes", "{'severityTier': 'minor'}"],
+    ["prose wrapped around broken JSON", 'Here you go: {"severityTier": } hope that helps'],
+  ];
+
+  for (const [name, text] of malformed) {
+    it(`raises a ReasoningError, not a SyntaxError, on ${name}`, () => {
+      assert.throws(() => extractJson(text), ReasoningError);
+    });
+  }
+
+  it("never puts JSON parser jargon in front of the user", () => {
+    try {
+      extractJson('{"severityTier": "moder');
+      assert.fail("expected extractJson to throw");
+    } catch (err) {
+      const msg = (err as Error).message;
+      assert.doesNotMatch(msg, /JSON\.parse|Unexpected token|Unexpected end of|position \d+/i);
+      assert.ok(msg.length > 20, `message was too terse: ${msg}`);
+    }
+  });
+
+  it("still parses a valid object wrapped in prose and fences", () => {
+    const parsed = extractJson('```json\n{"severityTier": "minor"}\n```') as Record<string, unknown>;
+    assert.equal(parsed.severityTier, "minor");
   });
 });

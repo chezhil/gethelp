@@ -21,7 +21,7 @@ import {
   VoiceProvider,
   useProviderSettings,
 } from "../lib/store/settings";
-import { useTheme, useThemedStyles } from "../lib/store/theme";
+import { useThemedStyles } from "../lib/store/theme";
 
 const GEMINI_KEYS_URL = "https://aistudio.google.com/apikey";
 const GROQ_KEYS_URL = "https://console.groq.com/keys";
@@ -41,7 +41,6 @@ const GOOGLE_KEYS_URL = "https://console.cloud.google.com/apis/credentials";
  */
 export default function WelcomeScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const { settings, update } = useProviderSettings();
   const [hasReasoningKey, setHasReasoningKey] = useState(false);
@@ -49,8 +48,11 @@ export default function WelcomeScreen() {
 
   const isGemini = settings.reasoning === "gemini";
 
-  function finish() {
-    setOnboarded();
+  // Awaited: the index screen re-reads this flag the moment it mounts, and on
+  // native storage the write had not always landed by then — which bounced the
+  // user straight back to this screen.
+  async function finish() {
+    await setOnboarded();
     router.replace("/");
   }
 
@@ -77,6 +79,7 @@ export default function WelcomeScreen() {
         <Text style={styles.cardTitle}>Which AI should assess injuries?</Text>
 
         <SegmentedRow<ReasoningProvider>
+          label="Which AI should assess injuries?"
           value={settings.reasoning}
           onChange={(v) => update({ reasoning: v })}
           options={[
@@ -102,6 +105,11 @@ export default function WelcomeScreen() {
           onPress={() => Linking.openURL(isGemini ? GEMINI_KEYS_URL : GROQ_KEYS_URL)}
           hitSlop={8}
           accessibilityRole="link"
+          accessibilityLabel={
+            isGemini
+              ? "Get a free Gemini API key at aistudio.google.com, opens in a new tab"
+              : "Get a free Groq API key at console.groq.com, opens in a new tab"
+          }
           style={styles.linkButton}
         >
           <Text style={styles.link}>
@@ -133,6 +141,7 @@ export default function WelcomeScreen() {
           onPress={() => Linking.openURL(GOOGLE_KEYS_URL)}
           hitSlop={8}
           accessibilityRole="link"
+          accessibilityLabel="Get a Google API key in the Google Cloud Console, opens in a new tab"
           style={styles.linkButton}
         >
           <Text style={styles.link}>Get a key in Google Cloud Console ↗</Text>
@@ -246,7 +255,7 @@ function ProviderChoice<T extends string>({
   return (
     <View style={styles.choice}>
       <Text style={styles.choiceTitle}>{title}</Text>
-      <SegmentedRow<T> value={value} onChange={onChange} options={options} />
+      <SegmentedRow<T> label={title} value={value} onChange={onChange} options={options} />
       <Text style={styles.cardBody}>{description}</Text>
       {value === googleValue && !hasGoogleKey && (
         <Text style={styles.warn}>Needs the Google API key in Step 2 — add it above.</Text>

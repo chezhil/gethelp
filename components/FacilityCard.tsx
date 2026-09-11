@@ -1,25 +1,11 @@
 import { Linking, StyleSheet, Text, View } from "react-native";
-import { directionsUrl } from "../lib/providers/directions";
+import { directionsUrl, formatDistance, formatEta } from "../lib/format";
 import type { NearbyFacility } from "../lib/types";
 import { border, radius, shadow, spacing, type, type Colors } from "../constants/theme";
-import { useTheme, useThemedStyles } from "../lib/store/theme";
+import { useThemedStyles } from "../lib/store/theme";
 import { PrimaryButton } from "./PrimaryButton";
 
-function formatEta(seconds?: number): string {
-  if (seconds == null) return "—";
-  const mins = Math.round(seconds / 60);
-  if (mins < 60) return `${mins} min`;
-  return `${Math.floor(mins / 60)} h ${mins % 60} min`;
-}
-
-function formatDistance(meters?: number): string {
-  if (meters == null) return "";
-  const km = meters / 1000;
-  return km < 1 ? `${Math.round(meters)} m` : `${km.toFixed(1)} km`;
-}
-
 export function FacilityCard({ facility }: { facility: NearbyFacility }) {
-  const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.card}>
@@ -27,7 +13,7 @@ export function FacilityCard({ facility }: { facility: NearbyFacility }) {
         <Text style={styles.name} numberOfLines={2}>
           {facility.name}
         </Text>
-        <Text style={styles.eta}>{formatEta(facility.etaSeconds)}</Text>
+        <Text style={styles.eta}>{formatEta(facility.etaSeconds) ?? "—"}</Text>
       </View>
       {!!facility.address && <Text style={styles.address}>{facility.address}</Text>}
       <Text style={styles.distance}>{formatDistance(facility.distanceMeters)} away</Text>
@@ -37,7 +23,7 @@ export function FacilityCard({ facility }: { facility: NearbyFacility }) {
           variant="outline"
           style={styles.actionButton}
           onPress={() =>
-            Linking.openURL(directionsUrl({ lat: facility.lat, lng: facility.lng }, facility.name))
+            Linking.openURL(directionsUrl({ lat: facility.lat, lng: facility.lng }))
           }
         />
         {!!facility.phone && (

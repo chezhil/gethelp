@@ -11,7 +11,6 @@ interface TriageState {
   photoBase64?: string;
   photoUri?: string;
   photoMimeType?: string;
-  locationText: string;
   coords?: Coords;
   resolvedLocationLabel?: string;
 
@@ -21,9 +20,7 @@ interface TriageState {
 
   /** Accepts the functional form too — voice input needs it to append without racing itself. */
   setDescription: React.Dispatch<React.SetStateAction<string>>;
-  appendClarification: (answer: string) => void;
   setPhoto: (uri?: string, base64?: string, mimeType?: string) => void;
-  setLocationText: (v: string) => void;
   setCoords: (c: Coords | undefined, label?: string) => void;
   setResult: (r: SeverityResult | undefined) => void;
   setFacilities: (f: NearbyFacility[] | undefined, error?: string) => void;
@@ -37,16 +34,11 @@ export function TriageProvider({ children }: { children: React.ReactNode }) {
   const [photoBase64, setPhotoBase64] = useState<string | undefined>();
   const [photoUri, setPhotoUri] = useState<string | undefined>();
   const [photoMimeType, setPhotoMimeType] = useState<string | undefined>();
-  const [locationText, setLocationText] = useState("");
   const [coords, setCoordsState] = useState<Coords | undefined>();
   const [resolvedLocationLabel, setResolvedLocationLabel] = useState<string | undefined>();
   const [result, setResult] = useState<SeverityResult | undefined>();
   const [facilities, setFacilitiesState] = useState<NearbyFacility[] | undefined>();
   const [facilitiesError, setFacilitiesError] = useState<string | undefined>();
-
-  const appendClarification = useCallback((answer: string) => {
-    setDescription((prev) => `${prev}\n\nAdditional detail: ${answer}`);
-  }, []);
 
   const setPhoto = useCallback((uri?: string, base64?: string, mimeType?: string) => {
     setPhotoUri(uri);
@@ -69,7 +61,6 @@ export function TriageProvider({ children }: { children: React.ReactNode }) {
     setPhotoBase64(undefined);
     setPhotoUri(undefined);
     setPhotoMimeType(undefined);
-    setLocationText("");
     setCoordsState(undefined);
     setResolvedLocationLabel(undefined);
     setResult(undefined);
@@ -83,16 +74,13 @@ export function TriageProvider({ children }: { children: React.ReactNode }) {
       photoBase64,
       photoUri,
       photoMimeType,
-      locationText,
       coords,
       resolvedLocationLabel,
       result,
       facilities,
       facilitiesError,
       setDescription,
-      appendClarification,
       setPhoto,
-      setLocationText,
       setCoords,
       setResult,
       setFacilities,
@@ -103,13 +91,11 @@ export function TriageProvider({ children }: { children: React.ReactNode }) {
       photoBase64,
       photoUri,
       photoMimeType,
-      locationText,
       coords,
       resolvedLocationLabel,
       result,
       facilities,
       facilitiesError,
-      appendClarification,
       setPhoto,
       setCoords,
       setFacilities,

@@ -5,6 +5,7 @@ import { PrimaryButton } from "../components/PrimaryButton";
 import { border, CONTENT_MAX_WIDTH, radius, shadow, spacing, type, type Colors } from "../constants/theme";
 import { useTheme, useThemedStyles } from "../lib/store/theme";
 import { assessSeverity } from "../lib/providers/reasoning";
+import { withClarification } from "../lib/providers/reasoning-core";
 import { getMedicalProfile, useProviderSettings } from "../lib/store/settings";
 import { useTriage } from "../lib/store/triage";
 
@@ -26,18 +27,26 @@ export default function ProcessingScreen() {
   const [errorText, setErrorText] = useState("");
   const attempted = useRef(false);
 
+  // Only while the request is in flight: left running, this re-rendered the
+  // clarify and error screens every 2.2s for nothing.
   useEffect(() => {
+    if (phase !== "loading") return;
     const id = setInterval(() => setMessageIndex((i) => (i + 1) % LOADING_MESSAGES.length), 2200);
     return () => clearInterval(id);
-  }, []);
+  }, [phase]);
 
-  async function runAssessment(skipClarification = false) {
+  // The description is passed in rather than read off the store: answering a
+  // clarifying question appends to it and re-submits in the same tick, and a
+  // React state update is not visible until the next render — reading the
+  // store here re-sent the original text and dropped the answer, leaving the
+  // model to ask the same question again.
+  async function runAssessment(description: string, skipClarification = false) {
     setPhase("loading");
     setErrorText("");
     try {
       const medicalProfile = await getMedicalProfile();
       const result = await assessSeverity(settings.reasoning, {
-        description: triage.description,
+        description,
         medicalProfile,
         photoBase64: settings.reasoning === "gemini" ? triage.photoBase64 : undefined,
         photoMimeType: settings.reasoning === "gemini" ? triage.photoMimeType : undefined,
@@ -66,19 +75,20 @@ export default function ProcessingScreen() {
   useEffect(() => {
     if (!loaded || attempted.current) return;
     attempted.current = true;
-    runAssessment();
+    runAssessment(triage.description);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded]);
 
   function submitClarification() {
     if (!clarifyAnswer.trim()) return;
-    triage.appendClarification(clarifyAnswer.trim());
+    const next = withClarification(triage.description, clarifyAnswer);
+    triage.setDescription(next);
     setClarifyAnswer("");
-    runAssessment();
+    runAssessment(next);
   }
 
   function skipClarification() {
-    runAssessment(true);
+    runAssessment(triage.description, true);
   }
 
   if (phase === "clarify") {
@@ -91,6 +101,7 @@ export default function ProcessingScreen() {
           onChangeText={setClarifyAnswer}
           placeholder="Type your answer…"
           placeholderTextColor={colors.textMuted}
+          accessibilityLabel="Your answer to the clarifying question"
           style={styles.input}
           multiline
           autoFocus
@@ -118,7 +129,11 @@ export default function ProcessingScreen() {
         <View style={styles.errorBox}>
           <Text style={styles.errorBoxText}>{errorText}</Text>
         </View>
-        <PrimaryButton label="Try again" onPress={() => runAssessment()} style={styles.button} />
+        <PrimaryButton
+          label="Try again"
+          onPress={() => runAssessment(triage.description)}
+          style={styles.button}
+        />
         <PrimaryButton
           label="Back"
           variant="outline"

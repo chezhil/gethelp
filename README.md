@@ -204,13 +204,13 @@ behind if cross-device sync were ever wanted.
 ## Tests
 
 ```bash
-npm test        # 37 tests, no dependencies — Node's own runner
+npm test        # 73 tests, no dependencies — Node's own runner
 npm run typecheck
 ```
 
 The suite covers the logic where a bug is silent and costly rather than
-loud: the severity normalizer, the transcript reducer, and the HTTP error
-messages.
+loud: the severity normalizer, the transcript reducer, the HTTP error
+messages, the clarification round-trip, and the display formatters.
 
 The severity tests pin the safety rules. The load-bearing one is that an
 unrecognized tier from the model resolves to **severe**, not minor — failing
@@ -230,7 +230,22 @@ the interim-append bug fails five tests between them.
 
 `reasoning-core.ts` holds the provider-independent half of the severity logic
 so it can be exercised without pulling react-native in through the settings
-store.
+store. `lib/format.ts` exists for the same reason: the ETA/distance
+formatters and the Maps directions URL are pure, and belong somewhere the
+test runner can reach.
+
+`withClarification` is tested rather than commented because of the bug it
+replaced. The clarify-and-retry loop appended the user's answer to React
+state and re-submitted in the same tick — but the re-submission read the
+*previous* render's description, so the model was sent the original vague
+text again and asked the same question a second time. The answer was silently
+dropped. Returning the composed string, rather than only writing it to state,
+is what lets the caller send exactly what it just recorded.
+
+Storage writes are debounced (`lib/store/persist.ts`) rather than issued per
+keystroke: an API key was one keychain write per character on native. The
+save-as-you-type contract is kept — there is still no Save button — and
+whatever is outstanding is flushed when the screen unmounts.
 
 ## Safety behavior implemented
 
@@ -240,7 +255,13 @@ store.
   restarting the flow
 - Ambiguous cases are instructed to resolve to the *higher* urgency tier
 - Severe/critical results show a "Call emergency services" CTA above
-  everything else on the result screen
+  everything else on the result screen, dialling the number for the device's
+  own region (`lib/emergency.ts`) and printing it on the button — 911 in the
+  US, 999 in the UK, 119 in Japan, the ambulance line rather than the police
+  line wherever a country separates them. An unrecognized region falls back
+  to 112, which GSM networks route to local emergency services nearly
+  everywhere. Showing the number is the point: region detection can be wrong
+  on a traveller's handset, and only the person dialling can catch that
 - The "not a diagnosis" disclaimer is always visible on the result screen
 - First-aid steps are constrained to safe, non-invasive actions a bystander
   can take, and never replace the recommendation to seek care

@@ -130,7 +130,17 @@ export function extractJson(text: string): unknown {
   const start = s.indexOf("{");
   const end = s.lastIndexOf("}");
   if (start === -1 || end === -1) throw new ReasoningError("No JSON object found in model response.");
-  return JSON.parse(s.slice(start, end + 1));
+  try {
+    return JSON.parse(s.slice(start, end + 1));
+  } catch {
+    // A truncated or malformed reply throws a raw SyntaxError whose message
+    // ("Unexpected end of JSON input") would go straight to the screen. Every
+    // other failure in this app is phrased for someone who has just been
+    // injured; this one has to be too.
+    throw new ReasoningError(
+      "The model's reply came back incomplete. Try again — this is usually a one-off."
+    );
+  }
 }
 
 
@@ -170,7 +180,15 @@ missing, default to a higher urgency tier rather than a lower one.`;
 }
 
 /**
- * Groq / GPT-OSS 120B — text only, no vision support.
- * (Groq deprecated llama-3.3-70b-versatile; gpt-oss-120b is the current
- * fast, free-tier-friendly text model on their catalog.)
+ * The description to re-submit after the user answers a clarifying question.
+ *
+ * Pure, and returned rather than applied to state, because the caller has to
+ * send this exact text in the same tick it records it — a React state update
+ * is not visible until the next render, and re-reading the store there would
+ * re-send the original description and silently drop the answer.
  */
+export function withClarification(previous: string, answer: string): string {
+  const extra = answer.trim();
+  if (!extra) return previous;
+  return `${previous}\n\nAdditional detail: ${extra}`;
+}

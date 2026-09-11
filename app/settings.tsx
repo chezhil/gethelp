@@ -1,20 +1,18 @@
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { border, CONTENT_MAX_WIDTH, radius, shadow, spacing, type, type Colors } from "../constants/theme";
 import { ApiKeyField } from "../components/ApiKeyField";
 import { SegmentedRow } from "../components/SegmentedRow";
+import { useDebouncedPersist } from "../lib/store/persist";
 import { useTheme, useThemedStyles, type ThemeMode } from "../lib/store/theme";
 import {
-  API_KEY_SLOTS,
   getMedicalProfile,
   setMedicalProfile,
   DirectionsProvider,
   GeocodingProvider,
   ReasoningProvider,
   VoiceProvider,
-  getApiKey,
-  setApiKey,
   useProviderSettings,
 } from "../lib/store/settings";
 
@@ -24,6 +22,7 @@ function AppearanceRow() {
   return (
     <>
       <SegmentedRow<ThemeMode>
+        label="Appearance"
         value={mode}
         onChange={setMode}
         options={[
@@ -46,25 +45,39 @@ function MedicalProfileField() {
   const styles = useThemedStyles(makeStyles);
   const [value, setValue] = useState("");
   const [loaded, setLoaded] = useState(false);
+  /** Only a value the user typed is worth writing back — see the gate below. */
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
+    let active = true;
     getMedicalProfile().then((v) => {
+      if (!active) return;
       setValue(v);
       setLoaded(true);
     });
+    return () => {
+      active = false;
+    };
   }, []);
+
+  // Gated on `loaded` as well as `dirty`: this box starts empty and fills in
+  // asynchronously, and an empty value is stored as "delete the profile" —
+  // so persisting before the read lands would erase what it was about to show.
+  const persist = useCallback((v: string) => setMedicalProfile(v), []);
+  useDebouncedPersist(value, loaded && dirty, persist);
 
   return (
     <TextInput
       value={value}
       onChangeText={(v) => {
+        setDirty(true);
         setValue(v);
-        setMedicalProfile(v);
       }}
       placeholder={
         loaded ? "e.g. type 2 diabetes, on blood thinners, allergic to penicillin" : "Loading…"
       }
       placeholderTextColor={colors.textMuted}
+      accessibilityLabel="Medical background: conditions, medications or allergies"
       multiline
       style={styles.profileInput}
     />
@@ -72,7 +85,6 @@ function MedicalProfileField() {
 }
 
 export default function SettingsScreen() {
-  const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { settings, update, loaded } = useProviderSettings();
@@ -112,6 +124,7 @@ export default function SettingsScreen() {
 
           <Section title="AI Reasoning">
             <SegmentedRow<ReasoningProvider>
+              label="AI reasoning provider"
               value={settings.reasoning}
               onChange={(v) => update({ reasoning: v })}
               options={[
@@ -136,6 +149,7 @@ export default function SettingsScreen() {
 
           <Section title="Voice Input">
             <SegmentedRow<VoiceProvider>
+              label="Voice input provider"
               value={settings.voice}
               onChange={(v) => update({ voice: v })}
               options={[
@@ -150,6 +164,7 @@ export default function SettingsScreen() {
 
           <Section title="Geocoding">
             <SegmentedRow<GeocodingProvider>
+              label="Geocoding provider"
               value={settings.geocoding}
               onChange={(v) => update({ geocoding: v })}
               options={[
@@ -164,6 +179,7 @@ export default function SettingsScreen() {
 
           <Section title="Directions / ETA">
             <SegmentedRow<DirectionsProvider>
+              label="Directions and ETA provider"
               value={settings.directions}
               onChange={(v) => update({ directions: v })}
               options={[
@@ -190,7 +206,6 @@ export default function SettingsScreen() {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.section}>

@@ -4,7 +4,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { SeverityBadge } from "../components/SeverityBadge";
 import { border, CONTENT_MAX_WIDTH, radius, shadow, spacing, type, type Colors } from "../constants/theme";
-import { useTheme, useThemedStyles } from "../lib/store/theme";
+import { useThemedStyles } from "../lib/store/theme";
+import { formatEta } from "../lib/format";
 import { clearHistory, deleteHistoryEntry, loadHistory, type HistoryEntry } from "../lib/store/history";
 
 function formatWhen(at: number): string {
@@ -16,14 +17,7 @@ function formatWhen(at: number): string {
   return `${date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}, ${time}`;
 }
 
-function formatEta(seconds?: number): string | null {
-  if (seconds == null) return null;
-  const mins = Math.round(seconds / 60);
-  return mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)} h ${mins % 60} min`;
-}
-
 export default function HistoryScreen() {
-  const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const [entries, setEntries] = useState<HistoryEntry[]>([]);

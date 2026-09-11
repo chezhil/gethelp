@@ -1,6 +1,6 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider as NavThemeProvider } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Platform } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ProviderSettingsProvider } from "../lib/store/settings";
@@ -41,18 +41,22 @@ function ThemedShell() {
   // default is a light #f2f2f2 that shows through in the overscroll area and
   // during the cross-fade between screens. Hand it our palette so the seam
   // never appears.
-  const navBase = scheme === "dark" ? DarkTheme : DefaultTheme;
-  const navTheme = {
-    ...navBase,
-    colors: {
-      ...navBase.colors,
-      background: colors.bg,
-      card: colors.surface,
-      text: colors.text,
-      border: colors.border,
-      primary: colors.accent,
-    },
-  };
+  // Memoized: a fresh object here is a new context value for every screen
+  // under the navigator on every render of this shell.
+  const navTheme = useMemo(() => {
+    const navBase = scheme === "dark" ? DarkTheme : DefaultTheme;
+    return {
+      ...navBase,
+      colors: {
+        ...navBase.colors,
+        background: colors.bg,
+        card: colors.surface,
+        text: colors.text,
+        border: colors.border,
+        primary: colors.accent,
+      },
+    };
+  }, [scheme, colors]);
 
   return (
     <NavThemeProvider value={navTheme}>

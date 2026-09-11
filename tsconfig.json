@@ -2,6 +2,8 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    // Dead locals and imports are a review comment nobody has to write.
+    "noUnusedLocals": true,
     // Node's test runner strips types and resolves the real file, so test
     // imports carry the .ts extension. Safe here because nothing is emitted.
     "allowImportingTsExtensions": true,

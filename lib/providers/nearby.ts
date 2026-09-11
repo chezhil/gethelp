@@ -79,7 +79,7 @@ export async function nearbyWithGooglePlaces(
 }
 
 export async function nearbyFacilities(
-  provider: "google",
+  _provider: "google",
   origin: Coords,
   tier: SeverityTier
 ): Promise<NearbyFacility[]> {

@@ -2,7 +2,7 @@
 // returns a SeverityResult — swapping providers never touches the UI.
 
 import { getApiKey } from "../store/settings";
-import type { SeverityResult, SeverityTier } from "../types";
+import type { SeverityResult } from "../types";
 import { describeHttpError, fetchWithRetry } from "./http";
 
 export { ReasoningError, type AssessInput } from "./reasoning-core";

@@ -82,6 +82,12 @@ interface FetchOptions {
   retries?: number;
   /** Base delay between retries, doubled each attempt. */
   retryDelayMs?: number;
+  /**
+   * Give up on an attempt that never answers. Without this a provider that
+   * accepts the connection and then stalls leaves the Processing screen
+   * spinning forever, with nothing to do but navigate away.
+   */
+  timeoutMs?: number;
 }
 
 /**
@@ -96,16 +102,36 @@ interface FetchOptions {
 export async function fetchWithRetry(
   url: string,
   init: RequestInit,
-  { service, retries = 2, retryDelayMs = 700 }: FetchOptions
+  { service, retries = 2, retryDelayMs = 700, timeoutMs = 45_000 }: FetchOptions
 ): Promise<Response> {
   for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const resp = await fetch(url, init);
+      const resp = await fetch(url, { ...init, signal: controller.signal });
       // On the final attempt, hand back whatever we got — the caller turns a
       // bad status into a message naming the right key to check.
       if (!RETRYABLE_STATUSES.has(resp.status) || attempt === retries) return resp;
+      // Retrying this one: release the connection rather than leaving an
+      // unread body open until the next garbage collection. Guarded on its
+      // own — a runtime without a cancelable body must not have that
+      // throw caught below and reported as a network failure.
+      try {
+        await resp.body?.cancel?.();
+      } catch {
+        // Nothing to release, or nothing that can be.
+      }
     } catch {
+      // A timeout is not worth retrying — three stalled attempts is three
+      // times the wait for the same answer. Say so and stop.
+      if (controller.signal.aborted) {
+        throw new NetworkError(
+          `${service} took too long to respond. Check your connection and try again.`
+        );
+      }
       if (attempt === retries) throw new NetworkError(describeNetworkError(service));
+    } finally {
+      clearTimeout(timer);
     }
     await sleep(retryDelayMs * 2 ** attempt);
   }

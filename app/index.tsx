@@ -197,6 +197,7 @@ export default function InputScreen() {
           onChangeText={triage.setDescription}
           placeholder="Describe what happened…"
           placeholderTextColor={colors.textMuted}
+          accessibilityLabel="Describe what happened"
           multiline
           style={styles.textArea}
         />
@@ -437,17 +438,5 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   removePhotoButton: { alignSelf: "flex-start", paddingVertical: spacing.sm, minHeight: 44, justifyContent: "center" },
   removePhoto: { ...type.small, color: colors.danger },
   locationStatus: { ...type.small, color: colors.textMuted, marginTop: spacing.md },
-  label: { ...type.label, color: colors.textMuted, marginTop: spacing.lg, marginBottom: spacing.xs },
-  input: {
-    ...type.body,
-    color: colors.text,
-    borderWidth: border.width,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-    ...shadow.sm,
-  },
-  locationButton: { marginTop: spacing.sm, alignSelf: "flex-start" },
   submit: { marginTop: spacing.xl },
 });

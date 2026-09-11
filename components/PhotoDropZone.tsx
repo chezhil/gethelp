@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { border, radius, shadow, spacing, type, type Colors } from "../constants/theme";
-import { useTheme, useThemedStyles } from "../lib/store/theme";
+import { useThemedStyles } from "../lib/store/theme";
 
 /** Gemini's inline image limit is generous, but a 20MP phone photo isn't worth sending. */
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -19,12 +19,17 @@ interface Props {
  * anyone using a keyboard or a trackpad they'd rather not drag with.
  */
 export function PhotoDropZone({ onPhoto }: Props) {
-  const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const hostRef = useRef<View | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The parent passes a fresh arrow on every render, so keying the effect on
+  // it tore down four listeners and the hidden <input> — and rebuilt them —
+  // on every keystroke in the description box. Read it through a ref instead
+  // and wire the DOM up exactly once.
+  const onPhotoRef = useRef(onPhoto);
+  onPhotoRef.current = onPhoto;
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
@@ -54,7 +59,7 @@ export function PhotoDropZone({ onPhoto }: Props) {
         // data:image/png;base64,AAAA… → mime type + the raw base64 the
         // vision API wants, without the data-URL prefix.
         const mimeType = dataUrl.slice(5, dataUrl.indexOf(";"));
-        onPhoto(dataUrl, dataUrl.slice(comma + 1), mimeType || file.type);
+        onPhotoRef.current(dataUrl, dataUrl.slice(comma + 1), mimeType || file.type);
       };
       reader.readAsDataURL(file);
     };
@@ -109,7 +114,7 @@ export function PhotoDropZone({ onPhoto }: Props) {
       input.remove();
       inputRef.current = null;
     };
-  }, [onPhoto]);
+  }, []);
 
   if (Platform.OS !== "web") return null;
 

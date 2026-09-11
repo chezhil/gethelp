@@ -1,9 +1,8 @@
 import { StyleSheet, Text, View } from "react-native";
 import { border, radius, shadow, spacing, type, type Colors } from "../constants/theme";
-import { useTheme, useThemedStyles } from "../lib/store/theme";
+import { useThemedStyles } from "../lib/store/theme";
 
 export function Disclaimer() {
-  const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.wrap}>

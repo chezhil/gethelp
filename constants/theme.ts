@@ -1,11 +1,12 @@
 // Swiss-minimalist design tokens: quiet ground, soft pastel accents, one
 // muted action colour, thin hairline borders, restrained shadows. Urgency is
 // carried by type weight and size rather than louder colour.
-//
 // Two palettes, same token names. Components never import a palette directly
 // — they take one as an argument (see `useThemedStyles` in lib/store/theme),
 // so a theme change restyles the app without any screen knowing which theme
 // it is on.
+
+import type { SeverityTier } from "../lib/types";
 
 export const lightColors = {
   bg: "#FAFAF8", // off-white — not stark white, not cream
@@ -146,7 +147,10 @@ export const type = {
   },
 };
 
-export type SeverityTier = "minor" | "moderate" | "severe" | "critical";
+// Re-exported rather than redeclared: this had drifted into a second
+// structurally-identical definition, which TypeScript accepts right up until
+// the day one of them gains a tier.
+export type { SeverityTier } from "../lib/types";
 
 export const severityLabel: Record<SeverityTier, string> = {
   minor: "Minor",

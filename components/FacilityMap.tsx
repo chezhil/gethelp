@@ -26,7 +26,7 @@ export function FacilityMap({
   origin: Coords;
   facilities: NearbyFacility[];
 }) {
-  const { colors, scheme } = useTheme();
+  const { scheme } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);

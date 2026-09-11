@@ -1,15 +1,17 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import { border, radius, spacing, type, type Colors } from "../constants/theme";
+import { useDebouncedPersist } from "../lib/store/persist";
 import { API_KEY_SLOTS, getApiKey, setApiKey } from "../lib/store/settings";
 import { useTheme, useThemedStyles } from "../lib/store/theme";
 
 /**
- * One BYOK key input, saving on every keystroke.
+ * One BYOK key input, saving as you type.
  *
  * Saving as you type rather than behind a Save button means a key is never
  * lost to someone closing the screen — and since the value goes straight to
- * device storage and nowhere else, there is nothing to submit.
+ * device storage and nowhere else, there is nothing to submit. The write is
+ * debounced so a 40-character key is one storage write rather than 40.
  */
 export function ApiKeyField({
   slot,
@@ -27,17 +29,32 @@ export function ApiKeyField({
   const styles = useThemedStyles(makeStyles);
   const [value, setValue] = useState("");
   const [loaded, setLoaded] = useState(false);
+  /** Only a value the user typed is worth writing back. */
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
+    let active = true;
+    // Reset both gates first: until the new slot's key has been read back,
+    // `value` still holds the previous slot's key, and persisting that would
+    // copy one provider's key over another's.
+    setLoaded(false);
+    setDirty(false);
     getApiKey(slot).then((v) => {
+      if (!active) return;
       setValue(v ?? "");
       setLoaded(true);
       onHasKeyChange?.(!!v);
     });
+    return () => {
+      active = false;
+    };
     // onHasKeyChange is a render-scoped callback; re-running on its identity
     // would re-read storage on every parent render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slot]);
+
+  const persist = useCallback((v: string) => setApiKey(slot, v), [slot]);
+  useDebouncedPersist(value, loaded && dirty, persist);
 
   return (
     <View style={styles.keyField}>
@@ -45,8 +62,8 @@ export function ApiKeyField({
       <TextInput
         value={value}
         onChangeText={(v) => {
+          setDirty(true);
           setValue(v);
-          setApiKey(slot, v);
           onHasKeyChange?.(!!v.trim());
         }}
         placeholder={loaded ? placeholder : "Loading…"}

@@ -72,7 +72,3 @@ export async function route(
   return provider === "google" ? routeWithGoogle(origin, dest) : routeWithOSRM(origin, dest);
 }
 
-export function directionsUrl(dest: Coords, label: string): string {
-  const query = encodeURIComponent(`${label}@${dest.lat},${dest.lng}`);
-  return `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}&destination_place_id=&q=${query}`;
-}

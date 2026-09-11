@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Disclaimer } from "../components/Disclaimer";
+import { localEmergencyNumber } from "../lib/emergency";
 import { FacilityCard } from "../components/FacilityCard";
 import { FacilityMap } from "../components/FacilityMap";
 import { PrimaryButton } from "../components/PrimaryButton";
@@ -15,13 +16,11 @@ import { route as fetchRoute } from "../lib/providers/directions";
 import { addHistoryEntry } from "../lib/store/history";
 import { useProviderSettings } from "../lib/store/settings";
 import { useTriage } from "../lib/store/triage";
-import type { Coords, NearbyFacility } from "../lib/types";
+import type { Coords, NearbyFacility, SeverityTier } from "../lib/types";
 
 export default function ResultScreen() {
-  const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
-  const { settings } = useProviderSettings();
   const triage = useTriage();
   const result = triage.result;
   const saved = useRef(false);
@@ -75,6 +74,10 @@ export default function ResultScreen() {
   }
 
   const isUrgent = result.severityTier === "severe" || result.severityTier === "critical";
+  // Resolved once per screen, and shown on the button rather than hidden
+  // behind it — if region detection got this wrong, the person dialling is
+  // the only one who can catch it, and only if they can see the number.
+  const emergencyNumber = localEmergencyNumber();
 
   function startOver() {
     triage.reset();
@@ -85,12 +88,13 @@ export default function ResultScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       {isUrgent && (
         <Pressable
-          onPress={() => Linking.openURL("tel:112")}
+          onPress={() => Linking.openURL(`tel:${emergencyNumber}`)}
           accessibilityRole="button"
-          accessibilityLabel="Call emergency services on 112"
+          accessibilityLabel={`Call emergency services on ${emergencyNumber}`}
           style={styles.emergencyCta}
         >
           <Text style={styles.emergencyCtaText}>🚨 Call emergency services</Text>
+          <Text style={styles.emergencyCtaNumber}>{emergencyNumber}</Text>
         </Pressable>
       )}
 
@@ -137,7 +141,7 @@ export default function ResultScreen() {
   );
 }
 
-function FacilitiesSection({ tier, mentioned }: { tier: string; mentioned?: string }) {
+function FacilitiesSection({ tier, mentioned }: { tier: SeverityTier; mentioned?: string }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const { settings } = useProviderSettings();
@@ -146,7 +150,7 @@ function FacilitiesSection({ tier, mentioned }: { tier: string; mentioned?: stri
   const [error, setError] = useState<string | null>(null);
   // Pre-fill with whatever the user already typed on the input screen —
   // don't make them retype a location they already gave us.
-  const [manualLocation, setManualLocation] = useState(mentioned ?? triage.locationText);
+  const [manualLocation, setManualLocation] = useState(mentioned ?? "");
   const [gpsBusy, setGpsBusy] = useState(false);
   const started = useRef(false);
 
@@ -155,7 +159,7 @@ function FacilitiesSection({ tier, mentioned }: { tier: string; mentioned?: stri
       setLoading(true);
       setError(null);
       try {
-        const facilities = await nearbyFacilities(settings.nearby, coords, tier as any);
+        const facilities = await nearbyFacilities(settings.nearby, coords, tier);
         if (facilities.length === 0) {
           setError("No facilities found nearby.");
           triage.setFacilities([]);
@@ -211,7 +215,7 @@ function FacilitiesSection({ tier, mentioned }: { tier: string; mentioned?: stri
     // A place named in the description wins: if someone says where they are,
     // believe them over the phone's idea of where they are. GPS, picked up in
     // the background on the input screen, is the fallback.
-    const named = (mentioned ?? triage.locationText).trim();
+    const named = (mentioned ?? "").trim();
     if (named) {
       started.current = true;
       resolveAndSearch(named);
@@ -219,7 +223,7 @@ function FacilitiesSection({ tier, mentioned }: { tier: string; mentioned?: stri
       started.current = true;
       runSearch(triage.coords);
     }
-  }, [mentioned, triage.coords, triage.locationText, runSearch, resolveAndSearch]);
+  }, [mentioned, triage.coords, runSearch, resolveAndSearch]);
 
   async function useGps() {
     setError(null);
@@ -260,6 +264,7 @@ function FacilitiesSection({ tier, mentioned }: { tier: string; mentioned?: stri
             onChangeText={setManualLocation}
             placeholder="Type an address or area"
             placeholderTextColor={colors.textMuted}
+            accessibilityLabel="Your location: an address or area"
             style={styles.locationInput}
             editable={!loading && !gpsBusy}
           />
@@ -285,6 +290,18 @@ function FacilitiesSection({ tier, mentioned }: { tier: string; mentioned?: stri
 
       {loading && <Text style={styles.helperText}>Finding nearby help…</Text>}
       {!!error && <Text style={styles.errorText}>{error}</Text>}
+
+      {/* A failed search with a location already resolved otherwise hides the
+          prompt above and leaves no way back — and the most common cause here
+          is a provider having a bad minute, which a second press fixes. */}
+      {!!error && !loading && !!triage.coords && (
+        <PrimaryButton
+          label="Try the search again"
+          variant="outline"
+          onPress={() => runSearch(triage.coords!)}
+          style={styles.retrySearch}
+        />
+      )}
 
       {!!triage.coords && !!triage.facilities?.length && (
         <FacilityMap origin={triage.coords} facilities={triage.facilities} />
@@ -327,6 +344,17 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.5,
     textAlign: "center",
+  },
+  // The dialled number, legible at a glance and without competing with the
+  // instruction above it.
+  emergencyCtaNumber: {
+    color: colors.dangerText,
+    fontSize: 15,
+    fontWeight: "600",
+    letterSpacing: 1.5,
+    textAlign: "center",
+    marginTop: spacing.xs,
+    opacity: 0.9,
   },
   nature: { ...type.display, color: colors.text, marginTop: spacing.md },
   sectionLabel: { ...type.label, color: colors.textMuted, marginTop: spacing.lg, marginBottom: spacing.xs },
@@ -393,6 +421,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     backgroundColor: colors.bg,
   },
   locationButtonsRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
+  retrySearch: { marginBottom: spacing.md },
   locationBtn: { flex: 1, minHeight: 48, paddingVertical: spacing.sm },
   startOver: { marginTop: spacing.xl },
 });

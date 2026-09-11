@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { border, radius, severityLabel, shadow, spacing, type Colors, type SeverityTier } from "../constants/theme";
+import { border, radius, severityLabel, spacing, type Colors, type SeverityTier } from "../constants/theme";
 import { useTheme, useThemedStyles } from "../lib/store/theme";
 
 export function SeverityBadge({ tier }: { tier: SeverityTier }) {
