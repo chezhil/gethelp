@@ -75,6 +75,19 @@ Pages serves a project site from — asset URLs break without it.
 - `history.tsx` — past assessments, stored in this browser
 - `settings.tsx` — per-function provider choice + BYOK key entry
 
+### Photo input
+
+On a PC the photo control is a drag-and-drop box (it also clicks through to a
+file picker, since a drop-only target is useless with a keyboard). On touch
+devices it stays as Camera and Gallery buttons. The choice is made by asking
+the browser `(hover: hover) and (pointer: fine)` rather than measuring the
+window — a narrow desktop window is still a PC, and a large tablet still has
+no mouse.
+
+Dropped files are checked for type and size (images only, 10MB) and read as a
+data URL, from which the raw base64 and the file's real mime type are sent to
+the vision model.
+
 ### Location
 
 There is no location field. The app asks for GPS once when it opens and keeps

@@ -13,6 +13,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { PhotoDropZone } from "../components/PhotoDropZone";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { border, CONTENT_MAX_WIDTH, colors, radius, shadow, spacing, type } from "../constants/theme";
 import { getApiKey, useProviderSettings } from "../lib/store/settings";
@@ -24,6 +25,17 @@ export default function InputScreen() {
   const { settings } = useProviderSettings();
   const triage = useTriage();
   const [needsKey, setNeedsKey] = useState(false);
+  // Drag-and-drop only earns its space where there's something to drag with.
+  // Ask about the pointer rather than the window width: a narrow desktop
+  // window is still a PC, and a big tablet still has no mouse. On touch
+  // devices the Camera and Gallery buttons are the right affordance.
+  const [showDropZone] = useState(
+    () =>
+      Platform.OS === "web" &&
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches
+  );
   const [locationStatus, setLocationStatus] = useState<"pending" | "ready" | "unavailable">(
     "pending"
   );
@@ -162,7 +174,7 @@ export default function InputScreen() {
             </Text>
           </Pressable>
 
-          {photoSupported && (
+          {photoSupported && !showDropZone && (
             <>
               <Pressable onPress={() => pickPhoto(true)} hitSlop={8} style={styles.iconButton}>
                 <Text style={styles.iconButtonText}>📷 Camera</Text>
@@ -176,6 +188,12 @@ export default function InputScreen() {
         {voice.error && <Text style={styles.errorText}>{voice.error}</Text>}
         {!voice.isAvailable && !voice.error && (
           <Text style={styles.helperText}>{VOICE_UNAVAILABLE_REASON}</Text>
+        )}
+
+        {photoSupported && showDropZone && !triage.photoUri && (
+          <PhotoDropZone
+            onPhoto={(uri, base64, mimeType) => triage.setPhoto(uri, base64, mimeType)}
+          />
         )}
 
         {photoSupported && triage.photoUri && (
