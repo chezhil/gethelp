@@ -1,34 +1,35 @@
-// Neobrutalist design tokens: flat saturated colour, hard black borders,
-// offset shadows with no blur, heavy type. One place to tune the whole app.
+// Swiss-minimalist design tokens: off-white ground, soft pastel accents, one
+// muted action colour, thin hairline borders, restrained shadows. Urgency is
+// carried by type weight and size rather than louder colour.
 
 export const colors = {
-  bg: "#FFFBEF", // warm paper, not stark white
+  bg: "#FAFAF8", // off-white — not stark white, not cream
   surface: "#FFFFFF",
-  border: "#000000", // every edge is a hard black line
-  text: "#0A0A0A",
-  textMuted: "#5A5754",
+  border: "#E4E1D9",
+  text: "#1B1C1E",
+  textMuted: "#6B6D72",
 
-  // flat accents
-  yellow: "#FFD93D",
-  lime: "#B8FF4D",
-  cyan: "#5BE9E9",
-  pink: "#FF8FC8",
-  orange: "#FF8A3D",
+  // Soft pastel accents. Names are kept generic so screens can pick a tint
+  // without knowing the palette's provenance.
+  yellow: "#F3EAD0",
+  lime: "#DDE8D8",
+  cyan: "#DCE7EE",
+  pink: "#F2E2E4",
+  orange: "#F4E2D4",
 
-  // primary action
-  accent: "#FFD93D",
-  accentText: "#0A0A0A",
+  // One muted accent carries every primary action.
+  accent: "#3E5C76",
+  accentText: "#FFFFFF",
 
-  // Severity tiers. Urgency is carried by colour *and* weight — each tier
-  // steps up in saturation, and the badge itself grows at severe/critical
-  // (see SeverityBadge), so it still reads at a glance without relying on
-  // colour alone.
-  minor: { bg: "#B8FF4D", fg: "#0A0A0A", border: "#000000" },
-  moderate: { bg: "#FFD93D", fg: "#0A0A0A", border: "#000000" },
-  severe: { bg: "#FF8A3D", fg: "#0A0A0A", border: "#000000" },
-  critical: { bg: "#FF4D4D", fg: "#FFFFFF", border: "#000000" },
+  // Severity tiers: desaturated throughout, so "critical" still belongs to
+  // the same palette. The badge grows and thickens at severe/critical
+  // (see SeverityBadge) — weight does the shouting, not saturation.
+  minor: { bg: "#DCEBDA", fg: "#2C4A2A", border: "#BFD5BC" },
+  moderate: { bg: "#F2E6C9", fg: "#5B4A17", border: "#E1CE9A" },
+  severe: { bg: "#F3D9CB", fg: "#6B3218", border: "#E2BCA3" },
+  critical: { bg: "#EFCBC9", fg: "#6B1E1B", border: "#DFA9A5" },
 
-  danger: "#FF3B30",
+  danger: "#8C2F27",
   dangerText: "#FFFFFF",
 } as const;
 
@@ -41,11 +42,10 @@ export const spacing = {
   xxl: 48,
 } as const;
 
-// Neobrutalism keeps corners close to square.
 export const radius = {
-  sm: 4,
-  md: 6,
-  lg: 8,
+  sm: 6,
+  md: 10,
+  lg: 16,
 } as const;
 
 /**
@@ -55,34 +55,35 @@ export const radius = {
  */
 export const CONTENT_MAX_WIDTH = 640;
 
+// Hairlines. `thick` is still only 2px — it marks the one element that has
+// to dominate (the emergency CTA), without turning into a frame.
 export const border = {
-  width: 3,
-  thick: 4,
+  width: 1,
+  thick: 2,
 } as const;
 
 /**
- * Hard offset shadow — no blur, no spread, pure black. The signature of the
- * style. `boxShadow` is supported on both native (RN 0.76+) and web, so one
- * token works everywhere.
+ * Soft, low-contrast elevation — barely there, and only where depth is
+ * functional. `boxShadow` works on both native (RN 0.76+) and web.
  */
 export const shadow = {
-  sm: { boxShadow: "3px 3px 0px #000000" },
-  md: { boxShadow: "5px 5px 0px #000000" },
-  lg: { boxShadow: "7px 7px 0px #000000" },
-  none: { boxShadow: "0px 0px 0px #000000" },
+  sm: { boxShadow: "0px 1px 2px rgba(27, 28, 30, 0.04)" },
+  md: { boxShadow: "0px 2px 6px rgba(27, 28, 30, 0.06)" },
+  lg: { boxShadow: "0px 4px 14px rgba(27, 28, 30, 0.10)" },
+  none: { boxShadow: "0px 0px 0px rgba(0, 0, 0, 0)" },
 } as const;
 
 export const type = {
-  display: { fontSize: 34, fontWeight: "900" as const, letterSpacing: -1 },
-  title: { fontSize: 24, fontWeight: "900" as const, letterSpacing: -0.5 },
-  subtitle: { fontSize: 17, fontWeight: "800" as const, letterSpacing: -0.2 },
-  body: { fontSize: 15, fontWeight: "500" as const, lineHeight: 22 },
-  bodyStrong: { fontSize: 15, fontWeight: "800" as const, lineHeight: 22 },
-  small: { fontSize: 13, fontWeight: "600" as const, lineHeight: 18 },
+  display: { fontSize: 32, fontWeight: "700" as const, letterSpacing: -0.4 },
+  title: { fontSize: 22, fontWeight: "700" as const, letterSpacing: -0.2 },
+  subtitle: { fontSize: 17, fontWeight: "600" as const },
+  body: { fontSize: 15, fontWeight: "400" as const, lineHeight: 22 },
+  bodyStrong: { fontSize: 15, fontWeight: "600" as const, lineHeight: 22 },
+  small: { fontSize: 13, fontWeight: "400" as const, lineHeight: 18 },
   label: {
     fontSize: 12,
-    fontWeight: "900" as const,
-    letterSpacing: 1.2,
+    fontWeight: "600" as const,
+    letterSpacing: 0.6,
     textTransform: "uppercase" as const,
   },
 };

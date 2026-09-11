@@ -9,6 +9,8 @@ export interface SeverityResult {
   /** 2-3 plain-language sentences on what might be going on and why — urgency/routing framing, never a diagnosis. */
   summary: string;
   recommendedAction: string;
+  /** 2-4 things to do right now, while getting to care. Ordered most urgent first. */
+  firstAidSteps: string[];
   redFlags: string[];
   /**
    * A place the user named in their own words ("at Indiranagar", "near MG
@@ -33,6 +35,7 @@ export interface NearbyFacility {
   lng: number;
   distanceMeters?: number;
   address?: string;
+  phone?: string;
   etaSeconds?: number;
   etaMeters?: number;
 }

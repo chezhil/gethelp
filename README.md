@@ -23,11 +23,15 @@ H2S), 11 Sep 2026. Full problem statement: [docs/spec.md](docs/spec.md).
 The app ships with **no API keys**, by design: it never holds anyone's
 credentials, and each visitor uses their own. To run the full flow:
 
-1. Open the app and tap **Settings**
-2. Under **AI Reasoning**, paste a free Groq key from
-   [console.groq.com/keys](https://console.groq.com/keys) (no card required)
+1. Open the app — it says up front that a key is needed and links to Settings
+2. Under **AI Reasoning**, paste a free Gemini key from
+   [aistudio.google.com/apikey](https://aistudio.google.com/apikey). Gemini is
+   the default because it is the vision-capable path, so photos work. Don't
+   want a Google account? Switch that row to **Groq** and use a free key from
+   [console.groq.com/keys](https://console.groq.com/keys) instead — no card
+   either way, and the app says so on the setup banner.
 3. Optional — under **Nearby Search**, add a Google API key with the Places
-   API enabled, to see nearby hospitals with ETAs
+   API enabled, to see nearby hospitals with ETAs and a map
 4. Tap **Done**, describe an injury, and continue
 
 Severity assessment needs step 2. Everything else — geocoding and
@@ -73,7 +77,32 @@ Pages serves a project site from — asset URLs break without it.
   when the model says it needs more detail, without restarting the flow
 - `result.tsx` — severity, recommended action, red flags, nearby facilities
 - `history.tsx` — past assessments, stored in this browser
-- `settings.tsx` — per-function provider choice + BYOK key entry
+- `settings.tsx` — per-function provider choice, BYOK key entry, and the
+  standing medical background
+
+### What a result shows
+
+Severity tier, what it likely is, and the recommended next step, then:
+
+- **What this might mean** — two or three plain sentences on why this warrants
+  the urgency it was given. Framing, never a diagnosis.
+- **While you get help** — two to four first-aid steps to do right now,
+  ordered most urgent first, so the minutes before care aren't wasted
+- **Noted in your description** — the red flags the model picked out
+- **Nearby care** — a static map of you and the facilities (Google key only),
+  then cards in ETA order with **Directions** and, where the provider returned
+  a number, **Call**. Numbered pins match the card order.
+
+### Medical background
+
+Settings holds an optional standing note — conditions, medications, allergies.
+Every assessment takes it into account: being on blood thinners makes a head
+knock more urgent, and the model is told to raise the tier when it matters and
+say so in the red flags, rather than silently re-rank.
+
+It is health information, so: stored on this device only, never uploaded
+anywhere, and sent exactly as far as the injury description itself — to the
+reasoning provider you chose, and nowhere else.
 
 ### Photo input
 
@@ -122,6 +151,8 @@ behind if cross-device sync were ever wanted.
 - Severe/critical results show a "Call emergency services" CTA above
   everything else on the result screen
 - The "not a diagnosis" disclaimer is always visible on the result screen
+- First-aid steps are constrained to safe, non-invasive actions a bystander
+  can take, and never replace the recommendation to seek care
 - Facility search restricts to hospitals for severe/critical, and only widens
   to include doctors/clinics for minor/moderate
 - An empty nearby-search result shows an explicit empty state rather than
@@ -129,13 +160,16 @@ behind if cross-device sync were ever wanted.
 
 ## Design system
 
-Neobrutalist: flat saturated colour, 3–4px black borders, hard offset shadows
-with no blur, heavy type and uppercase labels. Buttons press down into their
-own shadow. Every token lives in `constants/theme.ts`.
+Swiss minimalism with soft pastels: an off-white ground, hairline borders,
+one muted accent for every primary action, and barely-there shadows used only
+where depth is functional. The pastel tints (yellow, lime, cyan, pink,
+orange) mark sections rather than decorate them. Every token lives in
+`constants/theme.ts`.
 
-Urgency is carried by weight and size as well as colour — the severity badge
-grows and thickens at severe/critical, and the emergency CTA keeps the
-thickest border and deepest shadow in the system — so the tiers stay legible
+Urgency is carried by weight and size rather than louder colour — even the
+severity tiers stay desaturated. The badge grows and thickens at
+severe/critical, and the emergency CTA is the one element with the heavier
+2px border and the deepest shadow in the system, so the tiers stay legible
 without depending on colour alone.
 
 The layout is one centred column capped at 640px: it fills a phone screen and

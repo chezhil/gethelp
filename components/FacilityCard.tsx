@@ -28,14 +28,24 @@ export function FacilityCard({ facility }: { facility: NearbyFacility }) {
       </View>
       {!!facility.address && <Text style={styles.address}>{facility.address}</Text>}
       <Text style={styles.distance}>{formatDistance(facility.distanceMeters)} away</Text>
-      <PrimaryButton
-        label="Directions"
-        variant="outline"
-        style={styles.directionsButton}
-        onPress={() =>
-          Linking.openURL(directionsUrl({ lat: facility.lat, lng: facility.lng }, facility.name))
-        }
-      />
+      <View style={styles.actions}>
+        <PrimaryButton
+          label="Directions"
+          variant="outline"
+          style={styles.actionButton}
+          onPress={() =>
+            Linking.openURL(directionsUrl({ lat: facility.lat, lng: facility.lng }, facility.name))
+          }
+        />
+        {!!facility.phone && (
+          <PrimaryButton
+            label="Call"
+            variant="outline"
+            style={styles.actionButton}
+            onPress={() => Linking.openURL(`tel:${facility.phone!.replace(/\s+/g, "")}`)}
+          />
+        )}
+      </View>
     </View>
   );
 }
@@ -61,7 +71,7 @@ const styles = StyleSheet.create({
     ...type.bodyStrong,
     color: colors.text,
     backgroundColor: colors.lime,
-    borderWidth: 2,
+    borderWidth: border.width,
     borderColor: colors.border,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.sm,
@@ -70,5 +80,6 @@ const styles = StyleSheet.create({
   },
   address: { ...type.small, color: colors.textMuted, marginTop: 2 },
   distance: { ...type.small, color: colors.textMuted, marginTop: 2 },
-  directionsButton: { marginTop: spacing.sm, minHeight: 44, paddingVertical: spacing.sm },
+  actions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.sm },
+  actionButton: { flex: 1, minHeight: 44, paddingVertical: spacing.sm },
 });

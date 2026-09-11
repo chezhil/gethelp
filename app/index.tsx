@@ -144,8 +144,10 @@ export default function InputScreen() {
           <Pressable onPress={() => router.push("/settings")} style={styles.setupBanner}>
             <Text style={styles.setupBannerTitle}>Setup needed</Text>
             <Text style={styles.setupBannerText}>
-              Add a free {settings.reasoning === "gemini" ? "Gemini" : "Groq"} API key in Settings
-              to start. Your key stays on this device.
+              {settings.reasoning === "gemini"
+                ? "Add a Gemini API key in Settings to start — free from Google AI Studio. No Google account? Switch to Groq in Settings instead."
+                : "Add a free Groq API key in Settings to start — no card needed."}{" "}
+              Your key stays on this device.
             </Text>
           </Pressable>
         )}
@@ -273,7 +275,7 @@ const styles = StyleSheet.create({
     ...type.small,
     color: colors.text,
     backgroundColor: colors.lime,
-    borderWidth: 2,
+    borderWidth: border.width,
     borderColor: colors.border,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.sm,
@@ -284,7 +286,7 @@ const styles = StyleSheet.create({
     ...type.small,
     color: colors.text,
     backgroundColor: colors.cyan,
-    borderWidth: 2,
+    borderWidth: border.width,
     borderColor: colors.border,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.sm,
@@ -332,7 +334,7 @@ const styles = StyleSheet.create({
   },
   iconButtonActive: { backgroundColor: colors.lime },
   iconButtonDisabled: { opacity: 0.5 },
-  iconButtonText: { ...type.small, color: colors.text, fontWeight: "800" },
+  iconButtonText: { ...type.small, color: colors.text, fontWeight: "600" },
   errorText: { ...type.small, color: colors.danger, marginTop: spacing.xs },
   helperText: { ...type.small, color: colors.textMuted, marginTop: spacing.sm },
   photoPreviewWrap: { marginTop: spacing.sm },

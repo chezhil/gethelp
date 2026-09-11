@@ -4,7 +4,7 @@ import { ActivityIndicator, StyleSheet, Text, TextInput, View } from "react-nati
 import { PrimaryButton } from "../components/PrimaryButton";
 import { border, CONTENT_MAX_WIDTH, colors, radius, shadow, spacing, type } from "../constants/theme";
 import { assessSeverity } from "../lib/providers/reasoning";
-import { useProviderSettings } from "../lib/store/settings";
+import { getMedicalProfile, useProviderSettings } from "../lib/store/settings";
 import { useTriage } from "../lib/store/triage";
 
 const LOADING_MESSAGES = ["Analyzing your description…", "Thinking this through…"];
@@ -32,8 +32,10 @@ export default function ProcessingScreen() {
     setPhase("loading");
     setErrorText("");
     try {
+      const medicalProfile = await getMedicalProfile();
       const result = await assessSeverity(settings.reasoning, {
         description: triage.description,
+        medicalProfile,
         photoBase64: settings.reasoning === "gemini" ? triage.photoBase64 : undefined,
         photoMimeType: settings.reasoning === "gemini" ? triage.photoMimeType : undefined,
         skipClarification,

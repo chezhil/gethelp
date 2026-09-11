@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     ...type.bodyStrong,
     color: colors.text,
     backgroundColor: colors.yellow,
-    borderWidth: 2,
+    borderWidth: border.width,
     borderColor: colors.border,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.md,

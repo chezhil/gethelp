@@ -4,6 +4,8 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-
 import { border, CONTENT_MAX_WIDTH, colors, radius, shadow, spacing, type } from "../constants/theme";
 import {
   API_KEY_SLOTS,
+  getMedicalProfile,
+  setMedicalProfile,
   DirectionsProvider,
   GeocodingProvider,
   ReasoningProvider,
@@ -38,6 +40,34 @@ function SegmentedRow<T extends string>({
         );
       })}
     </View>
+  );
+}
+
+function MedicalProfileField() {
+  const [value, setValue] = useState("");
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    getMedicalProfile().then((v) => {
+      setValue(v);
+      setLoaded(true);
+    });
+  }, []);
+
+  return (
+    <TextInput
+      value={value}
+      onChangeText={(v) => {
+        setValue(v);
+        setMedicalProfile(v);
+      }}
+      placeholder={
+        loaded ? "e.g. type 2 diabetes, on blood thinners, allergic to penicillin" : "Loading…"
+      }
+      placeholderTextColor={colors.textMuted}
+      multiline
+      style={styles.profileInput}
+    />
   );
 }
 
@@ -99,20 +129,31 @@ export default function SettingsScreen() {
 
       {!loaded ? null : (
         <>
+          <Section title="Medical background">
+            <Text style={styles.hint}>
+              Optional. Conditions, medications or allergies that should change how an injury is
+              judged — being on blood thinners makes a head knock more urgent, for instance. Saved
+              on this device only, and sent no further than the injury description itself.
+            </Text>
+            <MedicalProfileField />
+          </Section>
+
           <Section title="AI Reasoning">
             <SegmentedRow<ReasoningProvider>
               value={settings.reasoning}
               onChange={(v) => update({ reasoning: v })}
               options={[
-                { value: "groq", label: "GPT-OSS 120B (Groq)" },
                 { value: "gemini", label: "Gemini 3.6 Flash" },
+                { value: "groq", label: "GPT-OSS 120B (Groq)" },
               ]}
             />
             {settings.reasoning === "gemini" && (
               <Text style={styles.hint}>Photo attachment is available with Gemini.</Text>
             )}
             {settings.reasoning === "groq" && (
-              <Text style={styles.hint}>Text-only — photo attachment is hidden while selected.</Text>
+              <Text style={styles.hint}>
+                Text-only — photo attachment is hidden while selected. Free key, no card needed.
+              </Text>
             )}
             {settings.reasoning === "groq" ? (
               <ApiKeyField slot="groq" label="Groq API key" placeholder="gsk_…" />
@@ -202,7 +243,7 @@ const styles = StyleSheet.create({
     ...type.bodyStrong,
     color: colors.text,
     backgroundColor: colors.yellow,
-    borderWidth: 2,
+    borderWidth: border.width,
     borderColor: colors.border,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.md,
@@ -233,15 +274,27 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   segmentActive: { backgroundColor: colors.yellow, ...shadow.sm },
-  segmentText: { ...type.small, color: colors.textMuted, fontWeight: "800", textAlign: "center" },
+  segmentText: { ...type.small, color: colors.textMuted, fontWeight: "600", textAlign: "center" },
   segmentTextActive: { color: colors.text },
   hint: { ...type.small, color: colors.textMuted, marginTop: spacing.sm },
+  profileInput: {
+    ...type.body,
+    color: colors.text,
+    minHeight: 80,
+    borderWidth: border.width,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    padding: spacing.sm,
+    marginTop: spacing.sm,
+    backgroundColor: colors.bg,
+    textAlignVertical: "top",
+  },
   keyField: { marginTop: spacing.sm },
   keyLabel: { ...type.small, color: colors.textMuted, marginBottom: spacing.xs },
   keyInput: {
     ...type.body,
     color: colors.text,
-    borderWidth: 2,
+    borderWidth: border.width,
     borderColor: colors.border,
     borderRadius: radius.sm,
     padding: spacing.sm,

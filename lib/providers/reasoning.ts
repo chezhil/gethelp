@@ -20,6 +20,12 @@ Return ONLY a single JSON object, no prose, no markdown fences, matching exactly
                                  // and why that maps to this urgency tier — more detail
                                  // than likelyNature, still never a diagnosis
   "recommendedAction": string,  // one short sentence, routing language only
+  "firstAidSteps": string[],    // 2-4 things to do RIGHT NOW while getting to
+                                 // care, most urgent first, one short
+                                 // imperative each ("Keep the arm still and
+                                 // supported"). [] if there is nothing useful
+                                 // to do. Never anything that needs training
+                                 // or equipment a bystander won't have.
   "redFlags": string[],         // notable signs found in the description, [] if none
   "locationMentioned": string,  // a place the user named ("at Indiranagar",
                                  // "near MG Road"), or "" if they named none.
@@ -37,10 +43,18 @@ Rules:
   clarifyingQuestion when needsMoreInfo is true.
 - When genuinely ambiguous between two severity levels, choose the HIGHER (more
   urgent) tier. This is a safer failure mode than under-estimating.
+- If a medical background is supplied, weigh it: blood thinners raise the
+  urgency of a head knock or any bleeding, diabetes raises it for foot wounds,
+  and so on. Mention the relevant factor in redFlags when it changed your
+  assessment. Do not mention it when it made no difference.
 - Never provide a medical diagnosis, in either recommendedAction or summary. Speak
   only in urgency/routing language: "this suggests seeking care at an urgent care
   clinic" / "swelling and reduced movement like this often point to a soft-tissue
   or bone injury that's worth an in-person look" — never "you have a fracture".
+- firstAidSteps are immediate, safe, bystander-level actions only — rest, ice,
+  elevation, pressure on bleeding, keeping still, not eating before possible
+  surgery. Never suggest medication doses, moving someone with a possible
+  spinal injury, or anything requiring equipment or training.
 - Output strictly valid JSON. No text before or after it.`;
 
 function normalize(raw: unknown, forceAnswer: boolean): SeverityResult {
@@ -63,6 +77,7 @@ function normalize(raw: unknown, forceAnswer: boolean): SeverityResult {
         "There wasn't quite enough detail to narrow this down further, and you've chosen not to answer another question. Given that uncertainty, it's safer to treat this as worth an in-person look rather than assume it's minor.",
       recommendedAction:
         "Limited information was provided — seeking in-person urgent care is recommended for a proper evaluation.",
+      firstAidSteps: [],
       redFlags: [],
       needsMoreInfo: false,
     };
@@ -76,6 +91,7 @@ function normalize(raw: unknown, forceAnswer: boolean): SeverityResult {
       likelyNature: "",
       summary: "",
       recommendedAction: "",
+      firstAidSteps: [],
       redFlags: [],
       needsMoreInfo: true,
       clarifyingQuestion: q,
@@ -92,6 +108,9 @@ function normalize(raw: unknown, forceAnswer: boolean): SeverityResult {
     summary: typeof r.summary === "string" ? r.summary : "",
     recommendedAction:
       typeof r.recommendedAction === "string" ? r.recommendedAction : "Seeking in-person care is recommended",
+    firstAidSteps: Array.isArray(r.firstAidSteps)
+      ? r.firstAidSteps.filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+      : [],
     redFlags: Array.isArray(r.redFlags) ? r.redFlags.filter((x): x is string => typeof x === "string") : [],
     locationMentioned:
       typeof r.locationMentioned === "string" && r.locationMentioned.trim()
@@ -119,6 +138,22 @@ export interface AssessInput {
   photoMimeType?: string;
   /** User declined to answer another clarifying question — answer now regardless. */
   skipClarification?: boolean;
+  /** Free-text conditions/medications/allergies the user saved in Settings. */
+  medicalProfile?: string;
+}
+
+/**
+ * The description, plus any standing medical context. Kept as a separate
+ * labelled block rather than glued onto the description, so the model can
+ * tell what the person just said from what's always true of them.
+ */
+function userMessageFor(input: AssessInput): string {
+  const profile = input.medicalProfile?.trim();
+  if (!profile) return input.description;
+  return `${input.description}
+
+---
+Known medical background for this person (may or may not be relevant): ${profile}`;
 }
 
 function systemPromptFor(input: AssessInput): string {
@@ -157,7 +192,7 @@ export async function assessWithGroq(input: AssessInput): Promise<SeverityResult
       reasoning_effort: "low",
       messages: [
         { role: "system", content: systemPromptFor(input) },
-        { role: "user", content: input.description },
+        { role: "user", content: userMessageFor(input) },
       ],
     }),
   }, { service: "Groq" });
@@ -183,7 +218,7 @@ export async function assessWithGemini(input: AssessInput): Promise<SeverityResu
   const apiKey = await getApiKey("gemini");
   if (!apiKey) throw new ReasoningError("No Gemini API key set. Add one in Settings.");
 
-  const parts: Record<string, unknown>[] = [{ text: input.description }];
+  const parts: Record<string, unknown>[] = [{ text: userMessageFor(input) }];
   if (input.photoBase64) {
     // Use the picker's own reported type. Hardcoding image/jpeg rejects with
     // a 400 whenever the picked file is actually a PNG — common on Android

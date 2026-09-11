@@ -34,15 +34,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: border.width,
-    ...shadow.md,
   },
   // Urgency is signalled by size and weight too, not colour alone.
   badgeUrgent: {
     paddingVertical: spacing.md - 4,
     paddingHorizontal: spacing.lg,
     borderWidth: border.thick,
-    ...shadow.lg,
   },
-  text: { fontSize: 15, fontWeight: "900", letterSpacing: 1.5 },
-  textUrgent: { fontSize: 20, letterSpacing: 2 },
+  text: { fontSize: 14, fontWeight: "700", letterSpacing: 0.8 },
+  textUrgent: { fontSize: 18, fontWeight: "700", letterSpacing: 1 },
 });

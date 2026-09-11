@@ -45,6 +45,10 @@ export async function routeWithGoogle(origin: Coords, dest: Coords): Promise<Rou
       origin: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
       destination: { location: { latLng: { latitude: dest.lat, longitude: dest.lng } } },
       travelMode: "DRIVE",
+      // Current traffic, not a free-flow estimate. For "how long to reach an
+      // ER" that difference is the whole point — a 6-minute hospital at 3am
+      // is not a 6-minute hospital at rush hour.
+      routingPreference: "TRAFFIC_AWARE",
     }),
   }, { service: "Google Routes" });
   if (!resp.ok) {

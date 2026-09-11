@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     ...type.small,
     color: colors.text,
     backgroundColor: colors.orange,
-    borderWidth: 2,
+    borderWidth: border.width,
     borderColor: colors.border,
     borderRadius: radius.sm,
     padding: spacing.sm,

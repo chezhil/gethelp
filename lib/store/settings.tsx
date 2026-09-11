@@ -23,7 +23,10 @@ export interface ProviderSettings {
 }
 
 export const DEFAULT_SETTINGS: ProviderSettings = {
-  reasoning: "groq",
+  // Gemini by default: it's the vision-capable path (photos work) and the
+  // one this app is built around. Groq stays a keyless-signup fallback for
+  // anyone who doesn't want a Google key.
+  reasoning: "gemini",
   voice: "device",
   geocoding: "nominatim",
   directions: "osrm",
@@ -31,6 +34,31 @@ export const DEFAULT_SETTINGS: ProviderSettings = {
 };
 
 const SETTINGS_KEY = "triage.providerSettings.v1";
+const MEDICAL_PROFILE_KEY = "gethelp.medicalProfile.v1";
+
+/**
+ * Standing medical context — conditions, medications, allergies — that the
+ * user enters once and every assessment takes into account.
+ *
+ * Health information, so worth being explicit: it is stored on this device
+ * only (localStorage in a browser), never uploaded anywhere, and is sent
+ * exactly as far as the injury description itself — to the reasoning
+ * provider the user chose, and nowhere else.
+ */
+export async function getMedicalProfile(): Promise<string> {
+  try {
+    return (await AsyncStorage.getItem(MEDICAL_PROFILE_KEY)) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export async function setMedicalProfile(value: string): Promise<void> {
+  try {
+    if (value.trim()) await AsyncStorage.setItem(MEDICAL_PROFILE_KEY, value);
+    else await AsyncStorage.removeItem(MEDICAL_PROFILE_KEY);
+  } catch {}
+}
 
 // Which SecureStore key holds which provider's API key.
 export const API_KEY_SLOTS = {

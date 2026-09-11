@@ -31,18 +31,23 @@ export function PrimaryButton({
         isOutline && styles.outline,
         isDanger && styles.danger,
         !isOutline && !isDanger && styles.primary,
-        // The press "pushes" the button into its own shadow — the shadow
-        // shrinks and the button shifts down-right by the same amount, so the
-        // whole shape stays put while the depth collapses.
         pressed && !inactive && styles.pressed,
         inactive && styles.disabled,
         style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={colors.text} />
+        <ActivityIndicator color={isOutline ? colors.text : colors.accentText} />
       ) : (
-        <Text style={[styles.label, isDanger && styles.dangerLabel]}>{label}</Text>
+        <Text
+          style={[
+            styles.label,
+            !isOutline && !isDanger && styles.primaryLabel,
+            isDanger && styles.dangerLabel,
+          ]}
+        >
+          {label}
+        </Text>
       )}
     </Pressable>
   );
@@ -58,20 +63,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     minHeight: 52,
-    ...shadow.md,
-  },
-  primary: { backgroundColor: colors.accent },
-  outline: { backgroundColor: colors.surface },
-  danger: { backgroundColor: colors.danger },
-  pressed: {
-    transform: [{ translateX: 3 }, { translateY: 3 }],
     ...shadow.sm,
   },
-  disabled: {
-    opacity: 0.45,
-    ...shadow.none,
-    transform: [{ translateX: 3 }, { translateY: 3 }],
-  },
+  primary: { backgroundColor: colors.accent, borderColor: colors.accent },
+  outline: { backgroundColor: colors.surface },
+  danger: { backgroundColor: colors.danger, borderColor: colors.danger },
+  pressed: { opacity: 0.82 },
+  disabled: { opacity: 0.45, ...shadow.none },
   label: { ...type.bodyStrong, color: colors.text, textAlign: "center" },
+  primaryLabel: { color: colors.accentText },
   dangerLabel: { color: colors.dangerText },
 });

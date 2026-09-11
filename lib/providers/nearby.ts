@@ -38,7 +38,7 @@ export async function nearbyWithGooglePlaces(
       "Content-Type": "application/json",
       "X-Goog-Api-Key": apiKey,
       "X-Goog-FieldMask":
-        "places.id,places.displayName,places.location,places.formattedAddress",
+        "places.id,places.displayName,places.location,places.formattedAddress,places.nationalPhoneNumber",
     },
     body: JSON.stringify({
       includedTypes,
@@ -71,6 +71,7 @@ export async function nearbyWithGooglePlaces(
         lng,
         distanceMeters: haversineMeters(origin, { lat, lng }),
         address: pl.formattedAddress,
+        phone: pl.nationalPhoneNumber,
       };
     })
     .filter((f): f is NearbyFacility => f !== null)

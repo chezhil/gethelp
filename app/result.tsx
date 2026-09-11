@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Disclaimer } from "../components/Disclaimer";
 import { FacilityCard } from "../components/FacilityCard";
+import { FacilityMap } from "../components/FacilityMap";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { SeverityBadge } from "../components/SeverityBadge";
 import { border, CONTENT_MAX_WIDTH, colors, radius, severityAction, shadow, spacing, type } from "../constants/theme";
@@ -98,6 +99,17 @@ export default function ResultScreen() {
         <View style={styles.summaryBox}>
           <Text style={styles.sectionLabel}>What this might mean</Text>
           <Text style={styles.summaryText}>{result.summary}</Text>
+        </View>
+      )}
+
+      {result.firstAidSteps.length > 0 && (
+        <View style={styles.firstAidBox}>
+          <Text style={styles.sectionLabel}>While you get help</Text>
+          {result.firstAidSteps.map((step, i) => (
+            <Text key={i} style={styles.firstAidStep}>
+              {i + 1}. {step}
+            </Text>
+          ))}
         </View>
       )}
 
@@ -267,6 +279,10 @@ function FacilitiesSection({ tier, mentioned }: { tier: string; mentioned?: stri
       {loading && <Text style={styles.helperText}>Finding nearby help…</Text>}
       {!!error && <Text style={styles.errorText}>{error}</Text>}
 
+      {!!triage.coords && !!triage.facilities?.length && (
+        <FacilityMap origin={triage.coords} facilities={triage.facilities} />
+      )}
+
       {triage.facilities?.map((f) => (
         <FacilityCard key={f.id} facility={f} />
       ))}
@@ -301,13 +317,22 @@ const styles = StyleSheet.create({
   emergencyCtaText: {
     color: colors.dangerText,
     fontSize: 20,
-    fontWeight: "900",
+    fontWeight: "700",
     letterSpacing: 0.5,
     textAlign: "center",
   },
   nature: { ...type.display, color: colors.text, marginTop: spacing.md },
   sectionLabel: { ...type.label, color: colors.textMuted, marginTop: spacing.lg, marginBottom: spacing.xs },
   action: { ...type.bodyStrong, color: colors.text },
+  firstAidBox: {
+    marginTop: spacing.md,
+    backgroundColor: colors.lime,
+    borderWidth: border.width,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  firstAidStep: { ...type.body, color: colors.text, marginBottom: spacing.xs },
   summaryBox: {
     marginTop: spacing.md,
     backgroundColor: colors.surface,
@@ -334,7 +359,7 @@ const styles = StyleSheet.create({
     ...type.small,
     color: colors.text,
     backgroundColor: colors.orange,
-    borderWidth: 2,
+    borderWidth: border.width,
     borderColor: colors.border,
     borderRadius: radius.sm,
     padding: spacing.sm,
@@ -353,7 +378,7 @@ const styles = StyleSheet.create({
   locationInput: {
     ...type.body,
     color: colors.text,
-    borderWidth: 2,
+    borderWidth: border.width,
     borderColor: colors.border,
     borderRadius: radius.sm,
     padding: spacing.sm,
