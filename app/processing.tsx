@@ -35,6 +35,7 @@ export default function ProcessingScreen() {
       const result = await assessSeverity(settings.reasoning, {
         description: triage.description,
         photoBase64: settings.reasoning === "gemini" ? triage.photoBase64 : undefined,
+        photoMimeType: settings.reasoning === "gemini" ? triage.photoMimeType : undefined,
         skipClarification,
       });
       if (result.needsMoreInfo) {

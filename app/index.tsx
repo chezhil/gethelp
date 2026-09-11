@@ -48,7 +48,8 @@ export default function InputScreen() {
       : await ImagePicker.launchImageLibraryAsync({ base64: true, quality: 0.6 });
 
     if (!result.canceled && result.assets[0]) {
-      triage.setPhoto(result.assets[0].uri, result.assets[0].base64 ?? undefined);
+      const asset = result.assets[0];
+      triage.setPhoto(asset.uri, asset.base64 ?? undefined, asset.mimeType ?? undefined);
     }
   }
 

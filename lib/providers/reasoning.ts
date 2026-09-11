@@ -107,6 +107,8 @@ function extractJson(text: string): unknown {
 export interface AssessInput {
   description: string;
   photoBase64?: string; // only used by vision-capable providers
+  /** The picker's reported type for that photo, e.g. "image/png". */
+  photoMimeType?: string;
   /** User declined to answer another clarifying question — answer now regardless. */
   skipClarification?: boolean;
 }
@@ -168,25 +170,38 @@ export async function assessWithGroq(input: AssessInput): Promise<SeverityResult
   return normalize(extractJson(text), Boolean(input.skipClarification));
 }
 
-/** Gemini 2.5 Flash — supports an optional photo alongside the text description. */
+/** Gemini 3.6 Flash — supports an optional photo alongside the text description. */
 export async function assessWithGemini(input: AssessInput): Promise<SeverityResult> {
   const apiKey = await getApiKey("gemini");
   if (!apiKey) throw new ReasoningError("No Gemini API key set. Add one in Settings.");
 
   const parts: Record<string, unknown>[] = [{ text: input.description }];
   if (input.photoBase64) {
-    parts.push({ inlineData: { mimeType: "image/jpeg", data: input.photoBase64 } });
+    // Use the picker's own reported type. Hardcoding image/jpeg rejects with
+    // a 400 whenever the picked file is actually a PNG — common on Android
+    // for screenshots and plenty of gallery images.
+    parts.push({
+      inlineData: { mimeType: input.photoMimeType || "image/jpeg", data: input.photoBase64 },
+    });
   }
 
   const resp = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
     {
       method: "POST",
       headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemPromptFor(input) }] },
         contents: [{ role: "user", parts }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 700 },
+        generationConfig: {
+          temperature: 0.3,
+          // Gemini 3.x always thinks before answering — it can't be turned
+          // off — and that thinking is charged to this same budget. Keep it
+          // generous so thinking can't eat the whole allowance and leave a
+          // candidate with no text at all (the gpt-oss trap above).
+          maxOutputTokens: 2048,
+          responseMimeType: "application/json",
+        },
       }),
     }
   );
@@ -196,11 +211,20 @@ export async function assessWithGemini(input: AssessInput): Promise<SeverityResu
     throw new ReasoningError(`Gemini request failed (${resp.status}): ${body.slice(0, 300)}`);
   }
   const data = await resp.json();
-  const responseParts = data?.candidates?.[0]?.content?.parts;
+  const candidate = data?.candidates?.[0];
+  const responseParts = candidate?.content?.parts;
   const text = Array.isArray(responseParts)
     ? responseParts.map((p: { text?: string }) => p.text ?? "").join("")
     : "";
-  if (!text) throw new ReasoningError("Gemini response had no text content.");
+  if (!text) {
+    // Say *why* it was empty — blocked for safety, cut off, or something
+    // else — instead of an opaque "no text content".
+    const reason =
+      candidate?.finishReason ??
+      data?.promptFeedback?.blockReason ??
+      "no finishReason given";
+    throw new ReasoningError(`Gemini returned no text (${reason}).`);
+  }
   return normalize(extractJson(text), Boolean(input.skipClarification));
 }
 

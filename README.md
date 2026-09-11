@@ -45,7 +45,7 @@ normalized types; swapping a provider in Settings never touches a screen.
 
 | Function | Default (no key) | Alternate (BYOK) |
 |---|---|---|
-| AI Reasoning | Groq · GPT-OSS 120B | Gemini 2.5 Flash |
+| AI Reasoning | Groq · GPT-OSS 120B | Gemini 3.6 Flash |
 | Voice Input | Device native speech recognition | Google Speech-to-Text |
 | Geocoding | OSM Nominatim | Google Geocoding |
 | Directions/ETA | OSRM (public, free) | Google Routes |
@@ -63,8 +63,11 @@ would be silently dropped — see `photoSupported` in `app/index.tsx`. Switching
 to Gemini in Settings re-enables it immediately.
 
 ### Session state (`lib/store/`)
-- `settings.ts` — provider choice (AsyncStorage) + API keys (SecureStore),
-  exposed via `useProviderSettings()`
+- `settings.tsx` — provider choice (AsyncStorage) + API keys (SecureStore),
+  held in one app-wide context and read via `useProviderSettings()`. It has to
+  be shared state, not per-component: expo-router keeps a screen mounted when
+  another is pushed over it, so a per-screen copy goes stale the moment you
+  change a provider in Settings
 - `triage.tsx` — one in-memory session (description, photo, location, result,
   facilities) shared across the three flow screens via React context
 
@@ -78,10 +81,10 @@ to Gemini in Settings re-enables it immediately.
 - Severe/critical results show a "Call emergency services" CTA above
   everything else on the result screen
 - The "not a diagnosis" disclaimer is always visible on the result screen
-- Facility search prioritizes hospitals/ERs for severe/critical, and
-  clinics/urgent care are only mixed in for minor/moderate
-- An empty nearby-search result shows an explicit empty state and, for the
-  OSM default, suggests switching to Google Places rather than failing silently
+- Facility search restricts to hospitals for severe/critical, and only widens
+  to include doctors/clinics for minor/moderate
+- An empty nearby-search result shows an explicit empty state rather than
+  failing silently
 
 ## Design system
 

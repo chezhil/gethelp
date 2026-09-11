@@ -10,6 +10,7 @@ interface TriageState {
   description: string;
   photoBase64?: string;
   photoUri?: string;
+  photoMimeType?: string;
   locationText: string;
   coords?: Coords;
   resolvedLocationLabel?: string;
@@ -20,7 +21,7 @@ interface TriageState {
 
   setDescription: (v: string) => void;
   appendClarification: (answer: string) => void;
-  setPhoto: (uri: string | undefined, base64: string | undefined) => void;
+  setPhoto: (uri?: string, base64?: string, mimeType?: string) => void;
   setLocationText: (v: string) => void;
   setCoords: (c: Coords | undefined, label?: string) => void;
   setResult: (r: SeverityResult | undefined) => void;
@@ -34,6 +35,7 @@ export function TriageProvider({ children }: { children: React.ReactNode }) {
   const [description, setDescription] = useState("");
   const [photoBase64, setPhotoBase64] = useState<string | undefined>();
   const [photoUri, setPhotoUri] = useState<string | undefined>();
+  const [photoMimeType, setPhotoMimeType] = useState<string | undefined>();
   const [locationText, setLocationText] = useState("");
   const [coords, setCoordsState] = useState<Coords | undefined>();
   const [resolvedLocationLabel, setResolvedLocationLabel] = useState<string | undefined>();
@@ -45,9 +47,10 @@ export function TriageProvider({ children }: { children: React.ReactNode }) {
     setDescription((prev) => `${prev}\n\nAdditional detail: ${answer}`);
   }, []);
 
-  const setPhoto = useCallback((uri: string | undefined, base64: string | undefined) => {
+  const setPhoto = useCallback((uri?: string, base64?: string, mimeType?: string) => {
     setPhotoUri(uri);
     setPhotoBase64(base64);
+    setPhotoMimeType(mimeType);
   }, []);
 
   const setCoords = useCallback((c: Coords | undefined, label?: string) => {
@@ -64,6 +67,7 @@ export function TriageProvider({ children }: { children: React.ReactNode }) {
     setDescription("");
     setPhotoBase64(undefined);
     setPhotoUri(undefined);
+    setPhotoMimeType(undefined);
     setLocationText("");
     setCoordsState(undefined);
     setResolvedLocationLabel(undefined);
@@ -77,6 +81,7 @@ export function TriageProvider({ children }: { children: React.ReactNode }) {
       description,
       photoBase64,
       photoUri,
+      photoMimeType,
       locationText,
       coords,
       resolvedLocationLabel,
@@ -96,6 +101,7 @@ export function TriageProvider({ children }: { children: React.ReactNode }) {
       description,
       photoBase64,
       photoUri,
+      photoMimeType,
       locationText,
       coords,
       resolvedLocationLabel,
