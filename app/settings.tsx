@@ -6,7 +6,6 @@ import {
   API_KEY_SLOTS,
   DirectionsProvider,
   GeocodingProvider,
-  NearbyProvider,
   ReasoningProvider,
   VoiceProvider,
   getApiKey,
@@ -155,15 +154,11 @@ export default function SettingsScreen() {
               onChange={(v) => update({ directions: v })}
               options={[
                 { value: "osrm", label: "OSRM (free)" },
-                { value: "mapbox", label: "Mapbox" },
                 { value: "google", label: "Google Routes" },
               ]}
             />
             {settings.directions === "osrm" && (
               <Text style={styles.hint}>No key needed — uses OSRM's public routing server.</Text>
-            )}
-            {settings.directions === "mapbox" && (
-              <ApiKeyField slot="mapbox" label="Mapbox access token" placeholder="pk.…" />
             )}
             {settings.directions === "google" && (
               <ApiKeyField slot="google" label="Google API key" placeholder="AIza…" />
@@ -171,17 +166,8 @@ export default function SettingsScreen() {
           </Section>
 
           <Section title="Nearby Search">
-            <SegmentedRow<NearbyProvider>
-              value={settings.nearby}
-              onChange={(v) => update({ nearby: v })}
-              options={[
-                { value: "overpass", label: "OSM Overpass" },
-                { value: "google", label: "Google Places" },
-              ]}
-            />
-            {settings.nearby === "google" && (
-              <ApiKeyField slot="google" label="Google API key" placeholder="AIza…" />
-            )}
+            <Text style={styles.hint}>Google Places.</Text>
+            <ApiKeyField slot="google" label="Google API key" placeholder="AIza…" />
           </Section>
         </>
       )}

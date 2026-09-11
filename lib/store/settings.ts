@@ -9,8 +9,8 @@ import { useCallback, useEffect, useState } from "react";
 export type ReasoningProvider = "groq" | "gemini";
 export type VoiceProvider = "device" | "google";
 export type GeocodingProvider = "nominatim" | "google";
-export type DirectionsProvider = "osrm" | "mapbox" | "google";
-export type NearbyProvider = "overpass" | "google";
+export type DirectionsProvider = "osrm" | "google";
+export type NearbyProvider = "google";
 
 export interface ProviderSettings {
   reasoning: ReasoningProvider;
@@ -25,7 +25,7 @@ export const DEFAULT_SETTINGS: ProviderSettings = {
   voice: "device",
   geocoding: "nominatim",
   directions: "osrm",
-  nearby: "overpass",
+  nearby: "google",
 };
 
 const SETTINGS_KEY = "triage.providerSettings.v1";
@@ -35,7 +35,6 @@ export const API_KEY_SLOTS = {
   groq: "triage.key.groq",
   gemini: "triage.key.gemini",
   google: "triage.key.google", // shared across Google Speech/Geocoding/Directions/Places
-  mapbox: "triage.key.mapbox",
 } as const;
 
 export type ApiKeySlot = keyof typeof API_KEY_SLOTS;

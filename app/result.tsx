@@ -98,11 +98,7 @@ function FacilitiesSection({ tier }: { tier: string }) {
       try {
         const facilities = await nearbyFacilities(settings.nearby, coords, tier as any);
         if (facilities.length === 0) {
-          setError(
-            settings.nearby === "overpass"
-              ? "No facilities found nearby. Try switching Nearby Search to Google Places in Settings."
-              : "No facilities found nearby."
-          );
+          setError("No facilities found nearby.");
           triage.setFacilities([]);
           return;
         }
