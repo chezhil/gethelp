@@ -1,10 +1,9 @@
-// Past assessments, stored per signed-in account.
+// Past assessments, kept on this device.
 //
-// Storage is local to the device (AsyncStorage, which is localStorage on
-// web). Entries are keyed by Google account id so two people signing in on
-// the same browser don't see each other's history — but this is not synced
-// across devices, because there's no backend to sync to. Signing in on a
-// different browser starts an empty history.
+// Storage is AsyncStorage — localStorage in the browser — so history belongs
+// to the browser it was created in. No account, no server, nothing leaves the
+// device. Clearing site data clears the history, and a different browser or
+// device starts empty. That's the whole contract, and the UI says so.
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { SeverityResult, SeverityTier } from "../types";
@@ -25,15 +24,12 @@ export interface HistoryEntry {
   nearestFacility?: { name: string; etaSeconds?: number };
 }
 
+const HISTORY_KEY = "gethelp.history.v1";
 const MAX_ENTRIES = 50;
 
-function keyFor(userId: string): string {
-  return `gethelp.history.v1.${userId}`;
-}
-
-export async function loadHistory(userId: string): Promise<HistoryEntry[]> {
+export async function loadHistory(): Promise<HistoryEntry[]> {
   try {
-    const raw = await AsyncStorage.getItem(keyFor(userId));
+    const raw = await AsyncStorage.getItem(HISTORY_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? (parsed as HistoryEntry[]) : [];
@@ -42,17 +38,14 @@ export async function loadHistory(userId: string): Promise<HistoryEntry[]> {
   }
 }
 
-export async function addHistoryEntry(
-  userId: string,
-  entry: {
-    description: string;
-    result: SeverityResult;
-    locationLabel?: string;
-    nearestFacility?: { name: string; etaSeconds?: number };
-  }
-): Promise<void> {
+export async function addHistoryEntry(entry: {
+  description: string;
+  result: SeverityResult;
+  locationLabel?: string;
+  nearestFacility?: { name: string; etaSeconds?: number };
+}): Promise<void> {
   try {
-    const existing = await loadHistory(userId);
+    const existing = await loadHistory();
     const record: HistoryEntry = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       at: Date.now(),
@@ -65,25 +58,25 @@ export async function addHistoryEntry(
       locationLabel: entry.locationLabel,
       nearestFacility: entry.nearestFacility,
     };
-    // Newest first, capped — this is a phone's storage, not an archive.
+    // Newest first, capped — this is browser storage, not an archive.
     const next = [record, ...existing].slice(0, MAX_ENTRIES);
-    await AsyncStorage.setItem(keyFor(userId), JSON.stringify(next));
+    await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(next));
   } catch {
     // Losing a history entry must never break the assessment flow.
   }
 }
 
-export async function clearHistory(userId: string): Promise<void> {
+export async function clearHistory(): Promise<void> {
   try {
-    await AsyncStorage.removeItem(keyFor(userId));
+    await AsyncStorage.removeItem(HISTORY_KEY);
   } catch {}
 }
 
-export async function deleteHistoryEntry(userId: string, entryId: string): Promise<void> {
+export async function deleteHistoryEntry(entryId: string): Promise<void> {
   try {
-    const existing = await loadHistory(userId);
+    const existing = await loadHistory();
     await AsyncStorage.setItem(
-      keyFor(userId),
+      HISTORY_KEY,
       JSON.stringify(existing.filter((e) => e.id !== entryId))
     );
   } catch {}

@@ -2,10 +2,6 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { border, CONTENT_MAX_WIDTH, colors, radius, shadow, spacing, type } from "../constants/theme";
-import { GoogleSignInButton } from "../components/GoogleSignInButton";
-import { PrimaryButton } from "../components/PrimaryButton";
-import { isAuthSupported } from "../lib/auth/google";
-import { useAuth } from "../lib/store/auth";
 import {
   API_KEY_SLOTS,
   DirectionsProvider,
@@ -87,7 +83,6 @@ function ApiKeyField({
 export default function SettingsScreen() {
   const router = useRouter();
   const { settings, update, loaded } = useProviderSettings();
-  const auth = useAuth();
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -104,53 +99,6 @@ export default function SettingsScreen() {
 
       {!loaded ? null : (
         <>
-          <Section title="Account">
-            {auth.user ? (
-              <>
-                <Text style={styles.accountName}>{auth.user.name}</Text>
-                {!!auth.user.email && (
-                  <Text style={styles.accountEmail}>{auth.user.email}</Text>
-                )}
-                <Text style={styles.hint}>
-                  Assessments you run are saved to your History on this device.
-                </Text>
-                <PrimaryButton
-                  label="Sign out"
-                  variant="outline"
-                  onPress={auth.signOut}
-                  style={styles.signOut}
-                />
-              </>
-            ) : !isAuthSupported ? (
-              <Text style={styles.hint}>
-                Signing in is available on the web app.
-              </Text>
-            ) : auth.clientId ? (
-              <>
-                <Text style={styles.hint}>
-                  Sign in with Google to keep a history of your assessments on this device.
-                </Text>
-                <GoogleSignInButton clientId={auth.clientId} onUser={auth.setUser} />
-              </>
-            ) : (
-              <>
-                <Text style={styles.hint}>
-                  Sign-in needs a Google OAuth client ID for this site. Paste one below — it
-                  isn't a secret.
-                </Text>
-                <TextInput
-                  value={auth.clientId}
-                  onChangeText={auth.setClientId}
-                  placeholder="…apps.googleusercontent.com"
-                  placeholderTextColor={colors.textMuted}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  style={styles.keyInput}
-                />
-              </>
-            )}
-          </Section>
-
           <Section title="AI Reasoning">
             <SegmentedRow<ReasoningProvider>
               value={settings.reasoning}
@@ -288,9 +236,6 @@ const styles = StyleSheet.create({
   segmentText: { ...type.small, color: colors.textMuted, fontWeight: "800", textAlign: "center" },
   segmentTextActive: { color: colors.text },
   hint: { ...type.small, color: colors.textMuted, marginTop: spacing.sm },
-  accountName: { ...type.subtitle, color: colors.text },
-  accountEmail: { ...type.small, color: colors.textMuted, marginTop: 2 },
-  signOut: { marginTop: spacing.md },
   keyField: { marginTop: spacing.sm },
   keyLabel: { ...type.small, color: colors.textMuted, marginBottom: spacing.xs },
   keyInput: {

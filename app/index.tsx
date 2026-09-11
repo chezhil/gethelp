@@ -15,7 +15,6 @@ import {
 } from "react-native";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { border, CONTENT_MAX_WIDTH, colors, radius, shadow, spacing, type } from "../constants/theme";
-import { useAuth } from "../lib/store/auth";
 import { getApiKey, useProviderSettings } from "../lib/store/settings";
 import { useTriage } from "../lib/store/triage";
 import { useVoiceInput, VOICE_UNAVAILABLE_REASON } from "../lib/providers/voice";
@@ -23,7 +22,6 @@ import { useVoiceInput, VOICE_UNAVAILABLE_REASON } from "../lib/providers/voice"
 export default function InputScreen() {
   const router = useRouter();
   const { settings } = useProviderSettings();
-  const { user } = useAuth();
   const triage = useTriage();
   const [usingGps, setUsingGps] = useState(false);
   const [locationBusy, setLocationBusy] = useState(false);
@@ -111,11 +109,9 @@ export default function InputScreen() {
         <View style={styles.headerRow}>
           <Text style={styles.title}>What happened?</Text>
           <View style={styles.headerActions}>
-            {!!user && (
-              <Pressable onPress={() => router.push("/history")} hitSlop={12}>
-                <Text style={styles.historyLink}>History</Text>
-              </Pressable>
-            )}
+            <Pressable onPress={() => router.push("/history")} hitSlop={12}>
+              <Text style={styles.historyLink}>History</Text>
+            </Pressable>
             <Pressable onPress={() => router.push("/settings")} hitSlop={12}>
               <Text style={styles.settingsLink}>Settings</Text>
             </Pressable>

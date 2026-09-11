@@ -71,62 +71,20 @@ Pages serves a project site from — asset URLs break without it.
 - `processing.tsx` — runs the assessment; handles the clarify-and-retry loop
   when the model says it needs more detail, without restarting the flow
 - `result.tsx` — severity, recommended action, red flags, nearby facilities
-- `history.tsx` — past assessments, for signed-in users
-- `settings.tsx` — account, per-function provider choice + BYOK key entry
+- `history.tsx` — past assessments, stored in this browser
+- `settings.tsx` — per-function provider choice + BYOK key entry
 
-### Accounts and history
+### History
 
-Sign in with Google (web only) keeps a history of past assessments. Because
-there is no backend, this is deliberately modest and worth stating plainly:
+Every assessment is saved to a **History** tab: severity, what it was, the
+recommendation, and the nearest facility with its ETA. Entries can be deleted
+individually or cleared all at once.
 
-- Google Identity Services runs entirely in the browser and returns a signed
-  ID token. The profile is read out of it to identify the account. **The
-  token's signature is not verified** — there's no server to verify it
-  against, and nothing privileged sits behind it. It separates one person's
-  history from another's on a device; it is not an authorization boundary.
-- History is stored **locally per account** (`localStorage` on web), not in
-  the cloud. Signing in on another browser starts an empty history.
-- Cross-device sync would need a real backend — Firebase or Supabase would
-  drop in behind `lib/store/history.ts` without touching the screens.
-
-To enable sign-in, create an **OAuth 2.0 Client ID** (Web application) in the
-Google Cloud console with this site's origin under *Authorized JavaScript
-origins*, then paste it into Settings → Account. The client ID is public by
-design in a browser OAuth flow — it is not a secret.
-
-### Provider adapters (`lib/providers/`)
-Every one of the five pluggable functions — reasoning, voice, geocoding,
-directions, nearby search — is a thin adapter that takes normalized input and
-returns a normalized shape from `lib/types.ts`. The UI only ever imports the
-normalized types; swapping a provider in Settings never touches a screen.
-
-| Function | Default (no key) | Alternate (BYOK) |
-|---|---|---|
-| AI Reasoning | Groq · GPT-OSS 120B | Gemini 3.6 Flash |
-| Voice Input | Device native speech recognition | Google Speech-to-Text |
-| Geocoding | OSM Nominatim | Google Geocoding |
-| Directions/ETA | OSRM (public, free) | Google Routes |
-| Nearby Search | — | Google Places (only option) |
-
-Two keys are needed to run the full flow: **AI Reasoning** (Groq) for the
-severity assessment, and **Google** for Nearby Search — Google Places is the
-only nearby-facility backend, so it isn't optional the way the other BYOK
-alternates are. Geocoding and Directions/ETA still default to free, no-key
-OSM/OSRM backends, with Google available as an alternate for either.
-
-GPT-OSS 120B is text-only. When it's the selected reasoning provider, the
-photo-attach control is hidden entirely rather than accepting a photo that
-would be silently dropped — see `photoSupported` in `app/index.tsx`. Switching
-to Gemini in Settings re-enables it immediately.
-
-### Session state (`lib/store/`)
-- `settings.tsx` — provider choice (AsyncStorage) + API keys (SecureStore),
-  held in one app-wide context and read via `useProviderSettings()`. It has to
-  be shared state, not per-component: expo-router keeps a screen mounted when
-  another is pushed over it, so a per-screen copy goes stale the moment you
-  change a provider in Settings
-- `triage.tsx` — one in-memory session (description, photo, location, result,
-  facilities) shared across the three flow screens via React context
+There is no login and no account. History lives in the browser's own storage
+(`localStorage` via AsyncStorage) and never leaves the device — so it is
+specific to that browser, clearing site data clears it, and another device
+starts empty. `lib/store/history.ts` is a small seam a real backend could sit
+behind if cross-device sync were ever wanted.
 
 ## Safety behavior implemented
 

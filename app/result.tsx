@@ -10,7 +10,6 @@ import { border, CONTENT_MAX_WIDTH, colors, radius, severityAction, shadow, spac
 import { geocode } from "../lib/providers/geocoding";
 import { nearbyFacilities } from "../lib/providers/nearby";
 import { route as fetchRoute } from "../lib/providers/directions";
-import { useAuth } from "../lib/store/auth";
 import { addHistoryEntry } from "../lib/store/history";
 import { useProviderSettings } from "../lib/store/settings";
 import { useTriage } from "../lib/store/triage";
@@ -19,23 +18,22 @@ import type { Coords, NearbyFacility } from "../lib/types";
 export default function ResultScreen() {
   const router = useRouter();
   const { settings } = useProviderSettings();
-  const { user } = useAuth();
   const triage = useTriage();
   const result = triage.result;
   const saved = useRef(false);
 
-  // Record the assessment for signed-in users. Runs once per result, and
+  // Record the assessment in this browser's history. Runs once per result, and
   // waits a beat for the facility search so the saved entry can include the
   // nearest one — but saves regardless if that search never lands, since the
   // assessment itself is the thing worth keeping.
   useEffect(() => {
-    if (!user || !result || saved.current) return;
+    if (!result || saved.current) return;
 
     const save = () => {
       if (saved.current) return;
       saved.current = true;
       const nearest = triage.facilities?.[0];
-      addHistoryEntry(user.id, {
+      addHistoryEntry({
         description: triage.description,
         result,
         locationLabel: triage.resolvedLocationLabel,
@@ -55,7 +53,6 @@ export default function ResultScreen() {
     const timer = setTimeout(save, 6000);
     return () => clearTimeout(timer);
   }, [
-    user,
     result,
     triage.facilities,
     triage.facilitiesError,

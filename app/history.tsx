@@ -12,7 +12,6 @@ import {
   spacing,
   type,
 } from "../constants/theme";
-import { useAuth } from "../lib/store/auth";
 import { clearHistory, deleteHistoryEntry, loadHistory, type HistoryEntry } from "../lib/store/history";
 
 function formatWhen(at: number): string {
@@ -32,20 +31,14 @@ function formatEta(seconds?: number): string | null {
 
 export default function HistoryScreen() {
   const router = useRouter();
-  const { user } = useAuth();
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
-      if (!user) {
-        setEntries([]);
-        setLoading(false);
-        return;
-      }
       setLoading(true);
-      loadHistory(user.id).then((list) => {
+      loadHistory().then((list) => {
         if (active) {
           setEntries(list);
           setLoading(false);
@@ -54,18 +47,16 @@ export default function HistoryScreen() {
       return () => {
         active = false;
       };
-    }, [user])
+    }, [])
   );
 
   async function removeEntry(id: string) {
-    if (!user) return;
-    await deleteHistoryEntry(user.id, id);
+    await deleteHistoryEntry(id);
     setEntries((prev) => prev.filter((e) => e.id !== id));
   }
 
   async function removeAll() {
-    if (!user) return;
-    await clearHistory(user.id);
+    await clearHistory();
     setEntries([]);
   }
 
@@ -78,60 +69,55 @@ export default function HistoryScreen() {
         </Pressable>
       </View>
 
-      {!user && (
-        <Text style={styles.empty}>Sign in to keep a record of your past assessments.</Text>
-      )}
+      {loading && <Text style={styles.empty}>Loading…</Text>}
 
-      {user && loading && <Text style={styles.empty}>Loading…</Text>}
-
-      {user && !loading && entries.length === 0 && (
+      {!loading && entries.length === 0 && (
         <View style={styles.emptyBox}>
           <Text style={styles.emptyTitle}>Nothing here yet</Text>
           <Text style={styles.empty}>
-            Assessments you run while signed in will be saved here, on this device.
+            Assessments you run are saved here, in this browser. Nothing is uploaded.
           </Text>
         </View>
       )}
 
-      {user &&
-        entries.map((entry) => {
-          const eta = formatEta(entry.nearestFacility?.etaSeconds);
-          return (
-            <View key={entry.id} style={styles.card}>
-              <View style={styles.cardTop}>
-                <SeverityBadge tier={entry.severityTier} />
-                <Text style={styles.when}>{formatWhen(entry.at)}</Text>
-              </View>
-
-              {!!entry.likelyNature && <Text style={styles.nature}>{entry.likelyNature}</Text>}
-              <Text style={styles.description} numberOfLines={3}>
-                “{entry.description}”
-              </Text>
-
-              {!!entry.recommendedAction && (
-                <Text style={styles.action}>{entry.recommendedAction}</Text>
-              )}
-
-              {!!entry.nearestFacility && (
-                <Text style={styles.meta}>
-                  Nearest: {entry.nearestFacility.name}
-                  {eta ? ` · ${eta}` : ""}
-                </Text>
-              )}
-              {!!entry.locationLabel && <Text style={styles.meta}>{entry.locationLabel}</Text>}
-
-              <Pressable
-                onPress={() => removeEntry(entry.id)}
-                hitSlop={12}
-                style={styles.deleteButton}
-              >
-                <Text style={styles.deleteText}>Delete</Text>
-              </Pressable>
+      {entries.map((entry) => {
+        const eta = formatEta(entry.nearestFacility?.etaSeconds);
+        return (
+          <View key={entry.id} style={styles.card}>
+            <View style={styles.cardTop}>
+              <SeverityBadge tier={entry.severityTier} />
+              <Text style={styles.when}>{formatWhen(entry.at)}</Text>
             </View>
-          );
-        })}
 
-      {user && entries.length > 0 && (
+            {!!entry.likelyNature && <Text style={styles.nature}>{entry.likelyNature}</Text>}
+            <Text style={styles.description} numberOfLines={3}>
+              “{entry.description}”
+            </Text>
+
+            {!!entry.recommendedAction && (
+              <Text style={styles.action}>{entry.recommendedAction}</Text>
+            )}
+
+            {!!entry.nearestFacility && (
+              <Text style={styles.meta}>
+                Nearest: {entry.nearestFacility.name}
+                {eta ? ` · ${eta}` : ""}
+              </Text>
+            )}
+            {!!entry.locationLabel && <Text style={styles.meta}>{entry.locationLabel}</Text>}
+
+            <Pressable
+              onPress={() => removeEntry(entry.id)}
+              hitSlop={12}
+              style={styles.deleteButton}
+            >
+              <Text style={styles.deleteText}>Delete</Text>
+            </Pressable>
+          </View>
+        );
+      })}
+
+      {entries.length > 0 && (
         <PrimaryButton
           label="Clear all history"
           variant="outline"
