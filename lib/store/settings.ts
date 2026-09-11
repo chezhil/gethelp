@@ -9,7 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 export type ReasoningProvider = "groq" | "gemini";
 export type VoiceProvider = "device" | "google";
 export type GeocodingProvider = "nominatim" | "google";
-export type DirectionsProvider = "mapbox" | "google";
+export type DirectionsProvider = "osrm" | "mapbox" | "google";
 export type NearbyProvider = "overpass" | "google";
 
 export interface ProviderSettings {
@@ -24,7 +24,7 @@ export const DEFAULT_SETTINGS: ProviderSettings = {
   reasoning: "groq",
   voice: "device",
   geocoding: "nominatim",
-  directions: "mapbox",
+  directions: "osrm",
   nearby: "overpass",
 };
 

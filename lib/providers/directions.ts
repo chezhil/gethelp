@@ -3,6 +3,24 @@ import type { Coords, RouteResult } from "../types";
 
 export class DirectionsError extends Error {}
 
+/**
+ * OSRM's public demo routing server — free, no key, no billing setup.
+ * It's a shared demo instance (not for heavy production traffic), but it's
+ * the right default for a hackathon build: zero setup between install and a
+ * working ETA. Mapbox/Google remain available as BYOK alternates in Settings
+ * for anyone who wants a production-grade routing backend.
+ */
+export async function routeWithOSRM(origin: Coords, dest: Coords): Promise<RouteResult> {
+  const coords = `${origin.lng},${origin.lat};${dest.lng},${dest.lat}`;
+  const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new DirectionsError(`OSRM request failed (${resp.status}).`);
+  const data = await resp.json();
+  const route = data?.routes?.[0];
+  if (!route) throw new DirectionsError("OSRM returned no route.");
+  return { durationSeconds: route.duration, distanceMeters: route.distance };
+}
+
 /** Mapbox Directions API — requires a Mapbox token. */
 export async function routeWithMapbox(origin: Coords, dest: Coords): Promise<RouteResult> {
   const token = await getApiKey("mapbox");
@@ -48,11 +66,13 @@ export async function routeWithGoogle(origin: Coords, dest: Coords): Promise<Rou
 }
 
 export async function route(
-  provider: "mapbox" | "google",
+  provider: "osrm" | "mapbox" | "google",
   origin: Coords,
   dest: Coords
 ): Promise<RouteResult> {
-  return provider === "google" ? routeWithGoogle(origin, dest) : routeWithMapbox(origin, dest);
+  if (provider === "google") return routeWithGoogle(origin, dest);
+  if (provider === "mapbox") return routeWithMapbox(origin, dest);
+  return routeWithOSRM(origin, dest);
 }
 
 export function directionsUrl(dest: Coords, label: string): string {

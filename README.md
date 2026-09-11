@@ -48,8 +48,15 @@ normalized types; swapping a provider in Settings never touches a screen.
 | AI Reasoning | Groq · Llama 3.3 70B | Gemini 2.5 Flash |
 | Voice Input | Device native speech recognition | Google Speech-to-Text |
 | Geocoding | OSM Nominatim | Google Geocoding |
-| Directions/ETA | Mapbox Directions | Google Routes |
+| Directions/ETA | OSRM (public, free) | Mapbox Directions · Google Routes |
 | Nearby Search | OSM Overpass | Google Places |
+
+Only one key is required to run the app at all: **AI Reasoning** has no
+free/no-key option (a severity assessment has to come from somewhere), so add
+a Groq key to get started. Everything else — geocoding, directions, nearby
+search — defaults to a free, no-key OSM/OSRM backend. Mapbox and Google
+require billing set up on their end even for free-tier usage, which is why
+they're BYOK alternates rather than the default.
 
 Llama 3.3 70B is text-only. When it's the selected reasoning provider, the
 photo-attach control is hidden entirely rather than accepting a photo that

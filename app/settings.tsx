@@ -154,13 +154,18 @@ export default function SettingsScreen() {
               value={settings.directions}
               onChange={(v) => update({ directions: v })}
               options={[
-                { value: "mapbox", label: "Mapbox Directions" },
+                { value: "osrm", label: "OSRM (free)" },
+                { value: "mapbox", label: "Mapbox" },
                 { value: "google", label: "Google Routes" },
               ]}
             />
-            {settings.directions === "mapbox" ? (
+            {settings.directions === "osrm" && (
+              <Text style={styles.hint}>No key needed — uses OSRM's public routing server.</Text>
+            )}
+            {settings.directions === "mapbox" && (
               <ApiKeyField slot="mapbox" label="Mapbox access token" placeholder="pk.…" />
-            ) : (
+            )}
+            {settings.directions === "google" && (
               <ApiKeyField slot="google" label="Google API key" placeholder="AIza…" />
             )}
           </Section>
