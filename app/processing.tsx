@@ -28,13 +28,14 @@ export default function ProcessingScreen() {
     return () => clearInterval(id);
   }, []);
 
-  async function runAssessment() {
+  async function runAssessment(skipClarification = false) {
     setPhase("loading");
     setErrorText("");
     try {
       const result = await assessSeverity(settings.reasoning, {
         description: triage.description,
         photoBase64: settings.reasoning === "gemini" ? triage.photoBase64 : undefined,
+        skipClarification,
       });
       if (result.needsMoreInfo) {
         setClarifyingQuestion(result.clarifyingQuestion ?? "Can you share a bit more detail?");
@@ -63,6 +64,10 @@ export default function ProcessingScreen() {
     runAssessment();
   }
 
+  function skipClarification() {
+    runAssessment(true);
+  }
+
   if (phase === "clarify") {
     return (
       <View style={styles.container}>
@@ -83,6 +88,12 @@ export default function ProcessingScreen() {
           disabled={!clarifyAnswer.trim()}
           style={styles.button}
         />
+        <PrimaryButton
+          label="Skip — use what I've already given"
+          variant="outline"
+          onPress={skipClarification}
+          style={styles.button}
+        />
       </View>
     );
   }
@@ -92,7 +103,7 @@ export default function ProcessingScreen() {
       <View style={styles.container}>
         <Text style={styles.title}>Couldn't complete the assessment</Text>
         <Text style={styles.question}>{errorText}</Text>
-        <PrimaryButton label="Try again" onPress={runAssessment} style={styles.button} />
+        <PrimaryButton label="Try again" onPress={() => runAssessment()} style={styles.button} />
         <PrimaryButton
           label="Back"
           variant="outline"

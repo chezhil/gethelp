@@ -34,12 +34,28 @@ Rules:
   "this suggests seeking care at an urgent care clinic", not "you have a fracture".
 - Output strictly valid JSON. No text before or after it.`;
 
-function normalize(raw: unknown): SeverityResult {
+function normalize(raw: unknown, forceAnswer: boolean): SeverityResult {
   if (typeof raw !== "object" || raw === null) {
     throw new ReasoningError("Model response was not a JSON object.");
   }
   const r = raw as Record<string, unknown>;
   const needsMoreInfo = Boolean(r.needsMoreInfo);
+
+  if (needsMoreInfo && forceAnswer) {
+    // The user chose to skip further clarification, but the model asked
+    // again anyway — fall back to a safe, honest answer rather than nag a
+    // second time. "moderate" (not "minor") because we genuinely don't have
+    // enough to rule out something worse, per the higher-tier-on-ambiguity
+    // rule everywhere else in this file.
+    return {
+      severityTier: "moderate",
+      likelyNature: "Not enough detail to characterize precisely",
+      recommendedAction:
+        "Limited information was provided — seeking in-person urgent care is recommended for a proper evaluation.",
+      redFlags: [],
+      needsMoreInfo: false,
+    };
+  }
 
   if (needsMoreInfo) {
     const q = typeof r.clarifyingQuestion === "string" ? r.clarifyingQuestion : "";
@@ -82,6 +98,18 @@ function extractJson(text: string): unknown {
 export interface AssessInput {
   description: string;
   photoBase64?: string; // only used by vision-capable providers
+  /** User declined to answer another clarifying question — answer now regardless. */
+  skipClarification?: boolean;
+}
+
+function systemPromptFor(input: AssessInput): string {
+  if (!input.skipClarification) return SYSTEM_PROMPT;
+  return `${SYSTEM_PROMPT}
+
+The user has chosen not to answer further clarifying questions. You MUST set
+needsMoreInfo to false and give your best assessment now, using only the
+information already given — do not ask another question. Where details are
+missing, default to a higher urgency tier rather than a lower one.`;
 }
 
 /**
@@ -109,7 +137,7 @@ export async function assessWithGroq(input: AssessInput): Promise<SeverityResult
       // token budget on reasoning before, leaving `content` empty.
       reasoning_effort: "low",
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: systemPromptFor(input) },
         { role: "user", content: input.description },
       ],
     }),
@@ -128,7 +156,7 @@ export async function assessWithGroq(input: AssessInput): Promise<SeverityResult
     // own message since raising max_tokens is the actual fix.
     throw new ReasoningError("Groq's response was empty — it ran out of tokens while reasoning. Try again.");
   }
-  return normalize(extractJson(text));
+  return normalize(extractJson(text), Boolean(input.skipClarification));
 }
 
 /** Gemini 2.5 Flash — supports an optional photo alongside the text description. */
@@ -147,7 +175,7 @@ export async function assessWithGemini(input: AssessInput): Promise<SeverityResu
       method: "POST",
       headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        systemInstruction: { parts: [{ text: systemPromptFor(input) }] },
         contents: [{ role: "user", parts }],
         generationConfig: { temperature: 0.3, maxOutputTokens: 500 },
       }),
@@ -164,7 +192,7 @@ export async function assessWithGemini(input: AssessInput): Promise<SeverityResu
     ? responseParts.map((p: { text?: string }) => p.text ?? "").join("")
     : "";
   if (!text) throw new ReasoningError("Gemini response had no text content.");
-  return normalize(extractJson(text));
+  return normalize(extractJson(text), Boolean(input.skipClarification));
 }
 
 export async function assessSeverity(

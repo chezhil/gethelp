@@ -78,7 +78,10 @@ function FacilitiesSection({ tier }: { tier: string }) {
   const triage = useTriage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [manualLocation, setManualLocation] = useState("");
+  // Pre-fill with whatever the user already typed on the input screen —
+  // don't make them retype a location they already gave us.
+  const [manualLocation, setManualLocation] = useState(triage.locationText);
+  const [gpsBusy, setGpsBusy] = useState(false);
   const started = useRef(false);
 
   const runSearch = useCallback(
@@ -119,42 +122,61 @@ function FacilitiesSection({ tier }: { tier: string }) {
     [settings.nearby, settings.directions, tier]
   );
 
+  const resolveAndSearch = useCallback(
+    async (query: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const geo = await geocode(settings.geocoding, query);
+        const coords = { lat: geo.lat, lng: geo.lng };
+        triage.setCoords(coords, geo.displayName);
+        await runSearch(coords);
+      } catch (err) {
+        setError(err instanceof GeocodingError ? err.message : "Could not resolve that location.");
+        setLoading(false);
+      }
+    },
+    [settings.geocoding, runSearch]
+  );
+
   useEffect(() => {
     if (started.current) return;
     if (triage.coords) {
       started.current = true;
       runSearch(triage.coords);
+    } else if (triage.locationText.trim()) {
+      // The user already typed a location on the input screen — resolve it
+      // automatically instead of asking them to type it again here.
+      started.current = true;
+      resolveAndSearch(triage.locationText.trim());
     }
-  }, [triage.coords, runSearch]);
+  }, [triage.coords, triage.locationText, runSearch, resolveAndSearch]);
 
   async function useGps() {
     setError(null);
-    const perm = await Location.requestForegroundPermissionsAsync();
-    if (!perm.granted) {
-      setError("Location permission was not granted.");
-      return;
-    }
-    const pos = await Location.getCurrentPositionAsync({});
-    const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    triage.setCoords(coords, "Current location");
-    started.current = true;
-    runSearch(coords);
-  }
-
-  async function useTypedLocation() {
-    if (!manualLocation.trim()) return;
-    setLoading(true);
-    setError(null);
+    setGpsBusy(true);
     try {
-      const geo = await geocode(settings.geocoding, manualLocation.trim());
-      const coords = { lat: geo.lat, lng: geo.lng };
-      triage.setCoords(coords, geo.displayName);
+      const perm = await Location.requestForegroundPermissionsAsync();
+      if (!perm.granted) {
+        setError("Location permission was not granted.");
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({});
+      const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      triage.setCoords(coords, "Current location");
       started.current = true;
       await runSearch(coords);
-    } catch (err) {
-      setError(err instanceof GeocodingError ? err.message : "Could not resolve that location.");
-      setLoading(false);
+    } catch {
+      setError("Could not get your location. Try typing it instead.");
+    } finally {
+      setGpsBusy(false);
     }
+  }
+
+  function useTypedLocation() {
+    if (!manualLocation.trim()) return;
+    started.current = true;
+    resolveAndSearch(manualLocation.trim());
   }
 
   return (
@@ -170,10 +192,24 @@ function FacilitiesSection({ tier }: { tier: string }) {
             placeholder="Type an address or area"
             placeholderTextColor={colors.textMuted}
             style={styles.locationInput}
+            editable={!loading && !gpsBusy}
           />
           <View style={styles.locationButtonsRow}>
-            <PrimaryButton label="Use this" variant="outline" onPress={useTypedLocation} style={styles.locationBtn} />
-            <PrimaryButton label="Use current location" onPress={useGps} style={styles.locationBtn} />
+            <PrimaryButton
+              label="Use this"
+              variant="outline"
+              onPress={useTypedLocation}
+              disabled={!manualLocation.trim() || gpsBusy}
+              loading={loading}
+              style={styles.locationBtn}
+            />
+            <PrimaryButton
+              label="Use current location"
+              onPress={useGps}
+              disabled={loading}
+              loading={gpsBusy}
+              style={styles.locationBtn}
+            />
           </View>
         </View>
       )}
