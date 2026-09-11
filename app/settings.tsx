@@ -104,7 +104,7 @@ export default function SettingsScreen() {
               value={settings.reasoning}
               onChange={(v) => update({ reasoning: v })}
               options={[
-                { value: "groq", label: "Llama 3.3 70B (Groq)" },
+                { value: "groq", label: "GPT-OSS 120B (Groq)" },
                 { value: "gemini", label: "Gemini 2.5 Flash" },
               ]}
             />

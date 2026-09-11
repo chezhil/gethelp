@@ -84,7 +84,11 @@ export interface AssessInput {
   photoBase64?: string; // only used by vision-capable providers
 }
 
-/** Groq / Llama 3.3 70B — text only, no vision support. */
+/**
+ * Groq / GPT-OSS 120B — text only, no vision support.
+ * (Groq deprecated llama-3.3-70b-versatile; gpt-oss-120b is the current
+ * fast, free-tier-friendly text model on their catalog.)
+ */
 export async function assessWithGroq(input: AssessInput): Promise<SeverityResult> {
   const apiKey = await getApiKey("groq");
   if (!apiKey) throw new ReasoningError("No Groq API key set. Add one in Settings.");
@@ -96,9 +100,14 @@ export async function assessWithGroq(input: AssessInput): Promise<SeverityResult
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       temperature: 0.3,
-      max_tokens: 500,
+      max_tokens: 700,
+      // gpt-oss is a reasoning model: it spends completion tokens on an
+      // internal "reasoning" pass before writing the final `content`. Low
+      // effort keeps that pass short — high effort has burned the whole
+      // token budget on reasoning before, leaving `content` empty.
+      reasoning_effort: "low",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: input.description },
@@ -113,6 +122,12 @@ export async function assessWithGroq(input: AssessInput): Promise<SeverityResult
   const data = await resp.json();
   const text = data?.choices?.[0]?.message?.content;
   if (typeof text !== "string") throw new ReasoningError("Groq response had no message content.");
+  if (!text.trim()) {
+    // gpt-oss ran out of its token budget mid-reasoning and never wrote a
+    // final answer — a distinct failure from "no field at all", worth its
+    // own message since raising max_tokens is the actual fix.
+    throw new ReasoningError("Groq's response was empty — it ran out of tokens while reasoning. Try again.");
+  }
   return normalize(extractJson(text));
 }
 

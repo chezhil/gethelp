@@ -27,7 +27,7 @@ export default function InputScreen() {
   const [locationBusy, setLocationBusy] = useState(false);
   const [locationNote, setLocationNote] = useState<string | null>(null);
 
-  // Llama 3.3 70B (Groq) is text-only — hide the photo option entirely rather
+  // GPT-OSS 120B (Groq) is text-only — hide the photo option entirely rather
   // than accept a photo that silently gets dropped.
   const photoSupported = settings.reasoning === "gemini";
 
