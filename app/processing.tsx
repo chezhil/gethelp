@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TextInput, View } from "react-native";
 import { PrimaryButton } from "../components/PrimaryButton";
-import { colors, spacing, type } from "../constants/theme";
+import { border, CONTENT_MAX_WIDTH, colors, radius, shadow, spacing, type } from "../constants/theme";
 import { assessSeverity } from "../lib/providers/reasoning";
 import { useProviderSettings } from "../lib/store/settings";
 import { useTriage } from "../lib/store/triage";
@@ -110,7 +110,9 @@ export default function ProcessingScreen() {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Couldn't complete the assessment</Text>
-        <Text style={styles.question}>{errorText}</Text>
+        <View style={styles.errorBox}>
+          <Text style={styles.errorBoxText}>{errorText}</Text>
+        </View>
         <PrimaryButton label="Try again" onPress={() => runAssessment()} style={styles.button} />
         <PrimaryButton
           label="Back"
@@ -138,21 +140,35 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     backgroundColor: colors.bg,
     gap: spacing.md,
+    width: "100%",
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: "center",
   },
   title: { ...type.title, color: colors.text, textAlign: "center" },
+  errorBox: {
+    width: "100%",
+    backgroundColor: colors.orange,
+    borderWidth: border.width,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    ...shadow.sm,
+  },
   question: { ...type.body, color: colors.textMuted, textAlign: "center" },
+  errorBoxText: { ...type.body, color: colors.text, textAlign: "center" },
   loadingText: { ...type.body, color: colors.textMuted },
   input: {
     ...type.body,
     color: colors.text,
     width: "100%",
     minHeight: 90,
-    borderWidth: 1,
+    borderWidth: border.width,
     borderColor: colors.border,
-    borderRadius: 10,
+    borderRadius: radius.md,
     padding: spacing.md,
     backgroundColor: colors.surface,
     textAlignVertical: "top",
+    ...shadow.sm,
   },
   button: { width: "100%", marginTop: spacing.sm },
 });

@@ -1,7 +1,7 @@
 import { Linking, StyleSheet, Text, View } from "react-native";
 import { directionsUrl } from "../lib/providers/directions";
 import type { NearbyFacility } from "../lib/types";
-import { colors, radius, spacing, type } from "../constants/theme";
+import { border, colors, radius, shadow, spacing, type } from "../constants/theme";
 import { PrimaryButton } from "./PrimaryButton";
 
 function formatEta(seconds?: number): string {
@@ -43,11 +43,12 @@ export function FacilityCard({ facility }: { facility: NearbyFacility }) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    borderWidth: border.width,
     borderColor: colors.border,
     borderRadius: radius.md,
     padding: spacing.md,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+    ...shadow.md,
   },
   headerRow: {
     flexDirection: "row",
@@ -56,7 +57,17 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   name: { ...type.subtitle, color: colors.text, flex: 1 },
-  eta: { ...type.bodyStrong, color: colors.accent },
+  eta: {
+    ...type.bodyStrong,
+    color: colors.text,
+    backgroundColor: colors.lime,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    overflow: "hidden",
+  },
   address: { ...type.small, color: colors.textMuted, marginTop: 2 },
   distance: { ...type.small, color: colors.textMuted, marginTop: 2 },
   directionsButton: { marginTop: spacing.sm, minHeight: 44, paddingVertical: spacing.sm },

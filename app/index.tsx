@@ -14,10 +14,10 @@ import {
   View,
 } from "react-native";
 import { PrimaryButton } from "../components/PrimaryButton";
-import { colors, radius, spacing, type } from "../constants/theme";
+import { border, CONTENT_MAX_WIDTH, colors, radius, shadow, spacing, type } from "../constants/theme";
 import { useProviderSettings } from "../lib/store/settings";
 import { useTriage } from "../lib/store/triage";
-import { useVoiceInput } from "../lib/providers/voice";
+import { useVoiceInput, VOICE_UNAVAILABLE_REASON } from "../lib/providers/voice";
 
 export default function InputScreen() {
   const router = useRouter();
@@ -138,9 +138,7 @@ export default function InputScreen() {
         </View>
         {voice.error && <Text style={styles.errorText}>{voice.error}</Text>}
         {!voice.isAvailable && !voice.error && (
-          <Text style={styles.helperText}>
-            Voice input needs a development build — it isn't available in Expo Go.
-          </Text>
+          <Text style={styles.helperText}>{VOICE_UNAVAILABLE_REASON}</Text>
         )}
 
         {photoSupported && triage.photoUri && (
@@ -203,26 +201,61 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xxl,
     backgroundColor: colors.bg,
     flexGrow: 1,
+    // Centred column: fills a phone screen, stops stretching on a desktop.
+    width: "100%",
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: "center",
   },
-  brand: { ...type.label, color: colors.accent, marginBottom: spacing.xs },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  title: { ...type.display, color: colors.text },
-  settingsLink: { ...type.small, color: colors.accent, fontWeight: "600" },
+  brand: {
+    ...type.label,
+    color: colors.text,
+    alignSelf: "flex-start",
+    backgroundColor: colors.yellow,
+    borderWidth: border.width,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.sm,
+    overflow: "hidden",
+    ...shadow.sm,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  // flexShrink lets the headline wrap instead of shoving the Settings chip
+  // off the edge on a narrow phone.
+  title: { ...type.display, color: colors.text, flexShrink: 1 },
+  settingsLink: {
+    ...type.small,
+    color: colors.text,
+    backgroundColor: colors.cyan,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    overflow: "hidden",
+  },
   subtitle: { ...type.body, color: colors.textMuted, marginTop: spacing.xs, marginBottom: spacing.lg },
   textArea: {
     ...type.body,
     color: colors.text,
-    minHeight: 110,
-    borderWidth: 1,
+    minHeight: 120,
+    borderWidth: border.width,
     borderColor: colors.border,
     borderRadius: radius.md,
     padding: spacing.md,
     backgroundColor: colors.surface,
     textAlignVertical: "top",
+    ...shadow.sm,
   },
   row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.sm },
   iconButton: {
-    borderWidth: 1,
+    borderWidth: border.width,
     borderColor: colors.border,
     borderRadius: radius.md,
     // 48dp minimum touch target (Android accessibility guidance). These used
@@ -233,25 +266,34 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     backgroundColor: colors.surface,
+    ...shadow.sm,
   },
-  iconButtonActive: { backgroundColor: colors.powder, borderColor: colors.powderText },
+  iconButtonActive: { backgroundColor: colors.lime },
   iconButtonDisabled: { opacity: 0.5 },
-  iconButtonText: { ...type.small, color: colors.text, fontWeight: "600" },
+  iconButtonText: { ...type.small, color: colors.text, fontWeight: "800" },
   errorText: { ...type.small, color: colors.danger, marginTop: spacing.xs },
   helperText: { ...type.small, color: colors.textMuted, marginTop: spacing.sm },
   photoPreviewWrap: { marginTop: spacing.sm },
-  photoPreview: { width: "100%", height: 160, borderRadius: radius.md, backgroundColor: colors.border },
+  photoPreview: {
+    width: "100%",
+    height: 160,
+    borderRadius: radius.md,
+    borderWidth: border.width,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
   removePhotoButton: { alignSelf: "flex-start", paddingVertical: spacing.sm, minHeight: 44, justifyContent: "center" },
   removePhoto: { ...type.small, color: colors.danger },
   label: { ...type.label, color: colors.textMuted, marginTop: spacing.lg, marginBottom: spacing.xs },
   input: {
     ...type.body,
     color: colors.text,
-    borderWidth: 1,
+    borderWidth: border.width,
     borderColor: colors.border,
     borderRadius: radius.md,
     padding: spacing.md,
     backgroundColor: colors.surface,
+    ...shadow.sm,
   },
   locationButton: { marginTop: spacing.sm, alignSelf: "flex-start" },
   submit: { marginTop: spacing.xl },

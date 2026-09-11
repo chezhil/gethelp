@@ -35,7 +35,16 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single",
+      "name": "GetHelp!",
+      "shortName": "GetHelp!",
+      "description": "Describe an injury, get an urgency assessment and the nearest care, sorted by how long it takes to get there.",
+      "themeColor": "#3E5C76",
+      "backgroundColor": "#FAFAF8",
+      "display": "standalone",
+      "lang": "en"
     },
     "plugins": [
       "expo-router",
@@ -61,6 +70,9 @@
         }
       ],
       "expo-status-bar"
-    ]
+    ],
+    "experiments": {
+      "baseUrl": "/gethelp"
+    }
   }
 }

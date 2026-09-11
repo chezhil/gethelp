@@ -6,7 +6,7 @@ import { Disclaimer } from "../components/Disclaimer";
 import { FacilityCard } from "../components/FacilityCard";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { SeverityBadge } from "../components/SeverityBadge";
-import { colors, radius, severityAction, spacing, type } from "../constants/theme";
+import { border, CONTENT_MAX_WIDTH, colors, radius, severityAction, shadow, spacing, type } from "../constants/theme";
 import { geocode } from "../lib/providers/geocoding";
 import { nearbyFacilities } from "../lib/providers/nearby";
 import { route as fetchRoute } from "../lib/providers/directions";
@@ -233,38 +233,85 @@ function FacilitiesSection({ tier }: { tier: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: spacing.lg, paddingTop: spacing.xxl, backgroundColor: colors.bg, flexGrow: 1 },
+  container: {
+    padding: spacing.lg,
+    paddingTop: spacing.xxl,
+    backgroundColor: colors.bg,
+    flexGrow: 1,
+    // Centred column: fills a phone screen, stops stretching on a desktop.
+    width: "100%",
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: "center",
+  },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
+  // The loudest thing on the screen by construction: full-bleed red, the
+  // thickest border and the deepest shadow in the system.
   emergencyCta: {
     backgroundColor: colors.danger,
     borderRadius: radius.md,
-    paddingVertical: spacing.md,
+    borderWidth: border.thick,
+    borderColor: colors.border,
+    paddingVertical: spacing.lg,
     alignItems: "center",
     marginBottom: spacing.lg,
+    ...shadow.lg,
   },
-  emergencyCtaText: { color: "#FFF", fontSize: 18, fontWeight: "700" },
-  nature: { ...type.title, color: colors.text, marginTop: spacing.md },
+  emergencyCtaText: {
+    color: colors.dangerText,
+    fontSize: 20,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+    textAlign: "center",
+  },
+  nature: { ...type.display, color: colors.text, marginTop: spacing.md },
   sectionLabel: { ...type.label, color: colors.textMuted, marginTop: spacing.lg, marginBottom: spacing.xs },
   action: { ...type.bodyStrong, color: colors.text },
-  summaryBox: { marginTop: spacing.md },
+  summaryBox: {
+    marginTop: spacing.md,
+    backgroundColor: colors.surface,
+    borderWidth: border.width,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    ...shadow.sm,
+  },
   summaryText: { ...type.body, color: colors.text },
-  flagsBox: { marginTop: spacing.xs },
+  flagsBox: {
+    marginTop: spacing.md,
+    backgroundColor: colors.pink,
+    borderWidth: border.width,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    ...shadow.sm,
+  },
   flag: { ...type.body, color: colors.text },
   facilitiesWrap: { marginTop: spacing.sm },
   helperText: { ...type.small, color: colors.textMuted, marginBottom: spacing.xs },
-  errorText: { ...type.small, color: colors.danger, marginBottom: spacing.xs },
+  errorText: {
+    ...type.small,
+    color: colors.text,
+    backgroundColor: colors.orange,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+    overflow: "hidden",
+  },
   locationPrompt: {
-    borderWidth: 1,
+    borderWidth: border.width,
     borderColor: colors.border,
     borderRadius: radius.md,
     padding: spacing.md,
     backgroundColor: colors.surface,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+    ...shadow.sm,
   },
   locationInput: {
     ...type.body,
     color: colors.text,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.border,
     borderRadius: radius.sm,
     padding: spacing.sm,

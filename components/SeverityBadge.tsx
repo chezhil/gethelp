@@ -1,5 +1,13 @@
 import { StyleSheet, Text, View } from "react-native";
-import { colors, radius, spacing, severityLabel, type SeverityTier } from "../constants/theme";
+import {
+  border,
+  colors,
+  radius,
+  severityLabel,
+  shadow,
+  spacing,
+  type SeverityTier,
+} from "../constants/theme";
 
 export function SeverityBadge({ tier }: { tier: SeverityTier }) {
   const palette = colors[tier];
@@ -13,7 +21,7 @@ export function SeverityBadge({ tier }: { tier: SeverityTier }) {
       ]}
     >
       <Text style={[styles.text, { color: palette.fg }, urgent && styles.textUrgent]}>
-        {severityLabel[tier]}
+        {severityLabel[tier].toUpperCase()}
       </Text>
     </View>
   );
@@ -22,21 +30,19 @@ export function SeverityBadge({ tier }: { tier: SeverityTier }) {
 const styles = StyleSheet.create({
   badge: {
     alignSelf: "flex-start",
-    paddingVertical: spacing.xs + 2,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
+    borderRadius: radius.md,
+    borderWidth: border.width,
+    ...shadow.md,
   },
+  // Urgency is signalled by size and weight too, not colour alone.
   badgeUrgent: {
-    paddingVertical: spacing.sm + 2,
+    paddingVertical: spacing.md - 4,
     paddingHorizontal: spacing.lg,
+    borderWidth: border.thick,
+    ...shadow.lg,
   },
-  text: {
-    fontSize: 15,
-    fontWeight: "700",
-    letterSpacing: 0.2,
-  },
-  textUrgent: {
-    fontSize: 18,
-  },
+  text: { fontSize: 15, fontWeight: "900", letterSpacing: 1.5 },
+  textUrgent: { fontSize: 20, letterSpacing: 2 },
 });

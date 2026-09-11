@@ -19,6 +19,7 @@
 
 import { requireOptionalNativeModule } from "expo-modules-core";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Platform } from "react-native";
 import type { VoiceProvider } from "../store/settings";
 
 type SpeechModule = typeof import("expo-speech-recognition");
@@ -27,7 +28,11 @@ let cachedModule: SpeechModule | null | undefined;
 
 function loadSpeechModule(): SpeechModule | null {
   if (cachedModule !== undefined) return cachedModule;
-  if (!requireOptionalNativeModule("ExpoSpeechRecognition")) {
+  // On web the package resolves to a registerWebModule() implementation
+  // backed by the browser's own Web Speech API, so there's no native module
+  // to probe for and the throwing requireNativeModule path never runs —
+  // probing there would wrongly report voice as unavailable.
+  if (Platform.OS !== "web" && !requireOptionalNativeModule("ExpoSpeechRecognition")) {
     cachedModule = null;
     return null;
   }
@@ -39,6 +44,23 @@ function loadSpeechModule(): SpeechModule | null {
   }
   return cachedModule;
 }
+
+/** Web only: the module loads everywhere, but Firefox has no Web Speech API. */
+function browserSupportsSpeech(mod: SpeechModule | null): boolean {
+  if (!mod) return false;
+  if (Platform.OS !== "web") return true;
+  try {
+    return mod.ExpoSpeechRecognitionModule.isRecognitionAvailable() !== false;
+  } catch {
+    return false;
+  }
+}
+
+/** Why voice is unavailable, phrased for wherever the app is running. */
+export const VOICE_UNAVAILABLE_REASON =
+  Platform.OS === "web"
+    ? "Voice input isn't supported in this browser — try Chrome or Edge."
+    : "Voice input needs a development build — it isn't available in Expo Go.";
 
 interface UseVoiceInputResult {
   isListening: boolean;
@@ -59,7 +81,7 @@ export function useVoiceInput(
   onTranscriptRef.current = onTranscript;
 
   const mod = loadSpeechModule();
-  const isAvailable = mod !== null;
+  const isAvailable = browserSupportsSpeech(mod);
 
   useEffect(() => {
     if (!mod) return;
@@ -79,8 +101,8 @@ export function useVoiceInput(
   }, [mod]);
 
   const start = useCallback(async () => {
-    if (!mod) {
-      setError("Voice input needs a development build — it isn't available in Expo Go.");
+    if (!isAvailable || !mod) {
+      setError(VOICE_UNAVAILABLE_REASON);
       return;
     }
     setError(null);
@@ -95,7 +117,7 @@ export function useVoiceInput(
       interimResults: true,
       continuous: false,
     });
-  }, [mod]);
+  }, [mod, isAvailable]);
 
   const stop = useCallback(() => {
     mod?.ExpoSpeechRecognitionModule.stop();

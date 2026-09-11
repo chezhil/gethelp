@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { colors, radius, spacing, type } from "../constants/theme";
+import { border, colors, radius, shadow, spacing, type } from "../constants/theme";
 
 export function Disclaimer() {
   return (
@@ -13,15 +13,18 @@ export function Disclaimer() {
 
 const styles = StyleSheet.create({
   wrap: {
-    borderTopWidth: 1,
+    marginTop: spacing.lg,
+    marginBottom: spacing.lg,
+    padding: spacing.md,
+    backgroundColor: colors.cyan,
+    borderWidth: border.width,
     borderColor: colors.border,
-    paddingTop: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
+    borderRadius: radius.md,
+    ...shadow.sm,
   },
   text: {
     ...type.small,
-    color: colors.textMuted,
+    color: colors.text,
     textAlign: "center",
   },
 });

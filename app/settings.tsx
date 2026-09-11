@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { colors, radius, spacing, type } from "../constants/theme";
+import { border, CONTENT_MAX_WIDTH, colors, radius, shadow, spacing, type } from "../constants/theme";
 import {
   API_KEY_SLOTS,
   DirectionsProvider,
@@ -186,24 +186,44 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 const styles = StyleSheet.create({
-  container: { padding: spacing.lg, paddingTop: spacing.xxl, backgroundColor: colors.bg, flexGrow: 1 },
+  container: {
+    padding: spacing.lg,
+    paddingTop: spacing.xxl,
+    backgroundColor: colors.bg,
+    flexGrow: 1,
+    // Centred column: fills a phone screen, stops stretching on a desktop.
+    width: "100%",
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: "center",
+  },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   title: { ...type.title, color: colors.text },
-  done: { ...type.bodyStrong, color: colors.accent },
+  done: {
+    ...type.bodyStrong,
+    color: colors.text,
+    backgroundColor: colors.yellow,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    overflow: "hidden",
+  },
   subtitle: { ...type.small, color: colors.textMuted, marginTop: spacing.xs, marginBottom: spacing.lg },
   section: {
-    borderWidth: 1,
+    borderWidth: border.width,
     borderColor: colors.border,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
     padding: spacing.md,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
+    ...shadow.md,
   },
   sectionTitle: { ...type.bodyStrong, color: colors.text, marginBottom: spacing.sm },
   segmentRow: { flexDirection: "row", gap: spacing.xs },
   segment: {
     flex: 1,
-    borderWidth: 1,
+    borderWidth: border.width,
     borderColor: colors.border,
     borderRadius: radius.sm,
     minHeight: 48,
@@ -212,16 +232,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  segmentActive: { backgroundColor: colors.powder, borderColor: colors.powderText },
-  segmentText: { ...type.small, color: colors.textMuted, fontWeight: "600" },
-  segmentTextActive: { color: colors.powderText },
+  segmentActive: { backgroundColor: colors.yellow, ...shadow.sm },
+  segmentText: { ...type.small, color: colors.textMuted, fontWeight: "800", textAlign: "center" },
+  segmentTextActive: { color: colors.text },
   hint: { ...type.small, color: colors.textMuted, marginTop: spacing.sm },
   keyField: { marginTop: spacing.sm },
   keyLabel: { ...type.small, color: colors.textMuted, marginBottom: spacing.xs },
   keyInput: {
     ...type.body,
     color: colors.text,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.border,
     borderRadius: radius.sm,
     padding: spacing.sm,

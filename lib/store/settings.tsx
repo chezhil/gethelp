@@ -1,10 +1,12 @@
 // Per-function provider selection + BYOK API keys.
-// Provider choice lives in AsyncStorage (not secret); keys live in SecureStore.
+// Provider choice lives in AsyncStorage (not secret); keys live in the
+// device keychain on native and localStorage on web (see keyStore below).
 // Nothing here ever leaves the device except direct calls to the chosen provider's own API.
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { Platform } from "react-native";
 
 export type ReasoningProvider = "groq" | "gemini";
 export type VoiceProvider = "device" | "google";
@@ -53,20 +55,62 @@ export async function saveSettings(settings: ProviderSettings): Promise<void> {
   await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
+/**
+ * Where API keys are kept.
+ *
+ * expo-secure-store has no web implementation at all — its web module is
+ * literally `export default {}` — so on web every read and write would throw
+ * and no key would ever persist. Web falls back to localStorage instead.
+ * That's less protected than the iOS keychain / Android keystore (any script
+ * on the same origin can read it), which is the honest trade for running in a
+ * browser; the key still never leaves the device except to its own provider.
+ */
+const keyStore =
+  Platform.OS === "web"
+    ? {
+        async get(key: string) {
+          try {
+            return globalThis.localStorage?.getItem(key) ?? null;
+          } catch {
+            return null; // private mode / storage disabled
+          }
+        },
+        async set(key: string, value: string) {
+          try {
+            globalThis.localStorage?.setItem(key, value);
+          } catch {}
+        },
+        async remove(key: string) {
+          try {
+            globalThis.localStorage?.removeItem(key);
+          } catch {}
+        },
+      }
+    : {
+        get: (key: string) => SecureStore.getItemAsync(key),
+        set: (key: string, value: string) => SecureStore.setItemAsync(key, value),
+        remove: (key: string) => SecureStore.deleteItemAsync(key),
+      };
+
 export async function getApiKey(slot: ApiKeySlot): Promise<string | null> {
   try {
-    return await SecureStore.getItemAsync(API_KEY_SLOTS[slot]);
+    return await keyStore.get(API_KEY_SLOTS[slot]);
   } catch {
     return null;
   }
 }
 
 export async function setApiKey(slot: ApiKeySlot, value: string): Promise<void> {
-  if (!value) {
-    await SecureStore.deleteItemAsync(API_KEY_SLOTS[slot]).catch(() => {});
-    return;
+  try {
+    if (!value) {
+      await keyStore.remove(API_KEY_SLOTS[slot]);
+      return;
+    }
+    await keyStore.set(API_KEY_SLOTS[slot], value);
+  } catch {
+    // Storage unavailable (private browsing, blocked cookies). The key still
+    // works for this session — it just won't be remembered.
   }
-  await SecureStore.setItemAsync(API_KEY_SLOTS[slot], value);
 }
 
 interface ProviderSettingsState {

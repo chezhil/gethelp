@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from "react-native";
-import { colors, radius, spacing, type } from "../constants/theme";
+import { border, colors, radius, shadow, spacing, type } from "../constants/theme";
 
 interface Props {
   label: string;
@@ -20,32 +20,29 @@ export function PrimaryButton({
 }: Props) {
   const isOutline = variant === "outline";
   const isDanger = variant === "danger";
+  const inactive = disabled || loading;
+
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled || loading}
+      disabled={inactive}
       style={({ pressed }) => [
         styles.base,
         isOutline && styles.outline,
         isDanger && styles.danger,
         !isOutline && !isDanger && styles.primary,
-        (disabled || loading) && styles.disabled,
-        pressed && !disabled && !loading && styles.pressed,
+        // The press "pushes" the button into its own shadow — the shadow
+        // shrinks and the button shifts down-right by the same amount, so the
+        // whole shape stays put while the depth collapses.
+        pressed && !inactive && styles.pressed,
+        inactive && styles.disabled,
         style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={isOutline ? colors.text : colors.accentText} />
+        <ActivityIndicator color={colors.text} />
       ) : (
-        <Text
-          style={[
-            styles.label,
-            isOutline && styles.outlineLabel,
-            isDanger && styles.dangerLabel,
-          ]}
-        >
-          {label}
-        </Text>
+        <Text style={[styles.label, isDanger && styles.dangerLabel]}>{label}</Text>
       )}
     </Pressable>
   );
@@ -54,17 +51,27 @@ export function PrimaryButton({
 const styles = StyleSheet.create({
   base: {
     borderRadius: radius.md,
+    borderWidth: border.width,
+    borderColor: colors.border,
     paddingVertical: spacing.md - 2,
+    paddingHorizontal: spacing.md,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 50,
+    minHeight: 52,
+    ...shadow.md,
   },
   primary: { backgroundColor: colors.accent },
-  outline: { backgroundColor: "transparent", borderWidth: 1, borderColor: colors.border },
+  outline: { backgroundColor: colors.surface },
   danger: { backgroundColor: colors.danger },
-  disabled: { opacity: 0.45 },
-  pressed: { opacity: 0.85 },
-  label: { ...type.bodyStrong, color: colors.accentText },
-  outlineLabel: { color: colors.text },
-  dangerLabel: { color: "#FFF" },
+  pressed: {
+    transform: [{ translateX: 3 }, { translateY: 3 }],
+    ...shadow.sm,
+  },
+  disabled: {
+    opacity: 0.45,
+    ...shadow.none,
+    transform: [{ translateX: 3 }, { translateY: 3 }],
+  },
+  label: { ...type.bodyStrong, color: colors.text, textAlign: "center" },
+  dangerLabel: { color: colors.dangerText },
 });
