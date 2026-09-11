@@ -3,7 +3,7 @@ import type { Coords, NearbyFacility, SeverityTier } from "../types";
 
 export class NearbyError extends Error {}
 
-const SEARCH_RADIUS_METERS = 8000;
+const SEARCH_RADIUS_METERS = 15000;
 
 function haversineMeters(a: Coords, b: Coords): number {
   const R = 6371000;
@@ -16,16 +16,21 @@ function haversineMeters(a: Coords, b: Coords): number {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-/** critical/severe → prioritize hospitals/ERs; minor/moderate → clinics are fine too. */
-function overpassAmenityFilter(tier: SeverityTier): string {
-  if (tier === "critical" || tier === "severe") {
-    return `nwr["amenity"="hospital"](around:${SEARCH_RADIUS_METERS},{lat},{lng});`;
-  }
-  return `
-    nwr["amenity"="hospital"](around:${SEARCH_RADIUS_METERS},{lat},{lng});
-    nwr["amenity"="clinic"](around:${SEARCH_RADIUS_METERS},{lat},{lng});
-    nwr["healthcare"="urgent_care" ~ "."](around:${SEARCH_RADIUS_METERS},{lat},{lng});
-  `;
+// Always query the broad set — hospitals, clinics, and urgent care — rather
+// than gating the query itself to hospitals-only for severe/critical. A
+// hospital-only query that finds nothing nearby used to dead-end with an
+// empty result; querying broadly and sorting hospitals first for high
+// urgency (see nearbyWithOverpass below) means a clinic still shows up
+// rather than nothing at all.
+const OVERPASS_FILTER = `
+  nwr["amenity"="hospital"](around:{radius},{lat},{lng});
+  nwr["healthcare"="hospital"](around:{radius},{lat},{lng});
+  nwr["amenity"="clinic"](around:{radius},{lat},{lng});
+  nwr["healthcare"="urgent_care"](around:{radius},{lat},{lng});
+`;
+
+function isHospitalLike(tags: Record<string, string>): boolean {
+  return tags.amenity === "hospital" || tags.healthcare === "hospital";
 }
 
 /** OpenStreetMap Overpass API — free, no key required. */
@@ -33,7 +38,7 @@ export async function nearbyWithOverpass(
   origin: Coords,
   tier: SeverityTier
 ): Promise<NearbyFacility[]> {
-  const filter = overpassAmenityFilter(tier)
+  const filter = OVERPASS_FILTER.replaceAll("{radius}", String(SEARCH_RADIUS_METERS))
     .replaceAll("{lat}", String(origin.lat))
     .replaceAll("{lng}", String(origin.lng));
   const query = `[out:json][timeout:20];(${filter});out center 20;`;
@@ -47,27 +52,38 @@ export async function nearbyWithOverpass(
   const data = await resp.json();
   const elements: unknown[] = Array.isArray(data?.elements) ? data.elements : [];
 
-  const facilities: NearbyFacility[] = elements
-    .map((el): NearbyFacility | null => {
+  const seen = new Set<string>();
+  const facilities: (NearbyFacility & { isHospital: boolean })[] = elements
+    .map((el): (NearbyFacility & { isHospital: boolean }) | null => {
       const e = el as Record<string, unknown>;
       const lat = typeof e.lat === "number" ? e.lat : (e.center as Coords | undefined)?.lat;
       const lng = typeof e.lng === "number" ? e.lng : (e.center as Coords | undefined)?.lng;
       const tags = (e.tags as Record<string, string> | undefined) ?? {};
       if (lat == null || lng == null || !tags.name) return null;
+      const id = `${e.type}/${e.id}`;
+      if (seen.has(id)) return null; // a place can match more than one filter clause above
+      seen.add(id);
       const dist = haversineMeters(origin, { lat, lng });
       const addressParts = [tags["addr:housenumber"], tags["addr:street"]].filter(Boolean);
       return {
-        id: `${e.type}/${e.id}`,
+        id,
         name: tags.name,
         lat,
         lng,
         distanceMeters: dist,
         address: addressParts.length ? addressParts.join(" ") : undefined,
+        isHospital: isHospitalLike(tags),
       };
     })
-    .filter((f): f is NearbyFacility => f !== null);
+    .filter((f): f is NearbyFacility & { isHospital: boolean } => f !== null);
 
-  return facilities.sort((a, b) => (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity)).slice(0, 8);
+  const prioritizeHospitals = tier === "critical" || tier === "severe";
+  facilities.sort((a, b) => {
+    if (prioritizeHospitals && a.isHospital !== b.isHospital) return a.isHospital ? -1 : 1;
+    return (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity);
+  });
+
+  return facilities.slice(0, 8).map(({ isHospital, ...f }) => f);
 }
 
 /** Google Places Nearby Search — requires a Google key. */
