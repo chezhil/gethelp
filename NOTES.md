@@ -1,4 +1,4 @@
-# PromptWars — Emergency Injury Triage & Locator App
+# PromptWars — GetHelp!
 
 Team Winners' entry for PromptWars x Community (Build with AI / Google for
 Developers / H2S), 11 Sep 2026.

@@ -88,6 +88,7 @@ export default function InputScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <Text style={styles.brand}>GetHelp!</Text>
         <View style={styles.headerRow}>
           <Text style={styles.title}>What happened?</Text>
           <Pressable onPress={() => router.push("/settings")} hitSlop={12}>
@@ -180,6 +181,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     flexGrow: 1,
   },
+  brand: { ...type.label, color: colors.accent, marginBottom: spacing.xs },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   title: { ...type.display, color: colors.text },
   settingsLink: { ...type.small, color: colors.accent, fontWeight: "600" },

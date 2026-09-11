@@ -1,4 +1,4 @@
-# Emergency Injury Triage & Locator
+# GetHelp!
 
 A mobile app (Expo / React Native) that helps an injured person, or someone
 helping them, quickly:

@@ -9,7 +9,7 @@ export async function geocodeWithNominatim(query: string): Promise<GeocodeResult
     query
   )}`;
   const resp = await fetch(url, {
-    headers: { "User-Agent": "emergency-triage-app/1.0" },
+    headers: { "User-Agent": "gethelp-app/1.0" },
   });
   if (!resp.ok) throw new GeocodingError(`Nominatim request failed (${resp.status}).`);
   const data = await resp.json();

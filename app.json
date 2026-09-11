@@ -1,13 +1,14 @@
 {
   "expo": {
-    "name": "Triage",
-    "slug": "emergency-triage",
+    "name": "GetHelp!",
+    "slug": "gethelp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "scheme": "triage",
+    "scheme": "gethelp",
     "ios": {
+      "bundleIdentifier": "com.promptwars.gethelp",
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Used to find nearby hospitals and estimate how long it will take to reach them.",
@@ -18,6 +19,7 @@
       }
     },
     "android": {
+      "package": "com.promptwars.gethelp",
       "adaptiveIcon": {
         "backgroundColor": "#FAFAF8",
         "foregroundImage": "./assets/android-icon-foreground.png",
